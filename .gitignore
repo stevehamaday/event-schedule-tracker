@@ -1,0 +1,15 @@
+# Node/React project .gitignore
+node_modules/
+dist/
+build/
+.env
+.DS_Store
+*.log
+# Ignore Webpack build output
+public/scripts/bundle.js
+public/scripts/bundle.js.LICENSE.txt
+# VSCode settings and workspace backups
+.vscode/
+*.code-workspace
+# OS-specific
+Thumbs.db

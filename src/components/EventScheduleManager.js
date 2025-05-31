@@ -1,0 +1,850 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { parseExcelFile } from '../utils/excelParser';
+import { QRCodeSVG } from 'qrcode.react';
+import axios from 'axios';
+
+// Helper for drag-and-drop
+const reorder = (list, startIndex, endIndex) => {
+  const result = Array.from(list);
+  const [removed] = result.splice(startIndex, 1);
+  result.splice(endIndex, 0, removed);
+  return result;
+};
+
+// Helper to recalculate start times based on durations and event start time
+const recalculateTimes = (schedule, eventStartTime = '09:00 AM') => {
+  // Convert eventStartTime to minutes since midnight
+  const toMinutes = (timeStr) => {
+    // Supports 'HH:MM AM/PM' or 'HH:MM' 24h
+    let [time, modifier] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (modifier) {
+      if (modifier.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+      if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+    }
+    return hours * 60 + minutes;
+  };
+  const toTimeStr = (mins) => {
+    let hours = Math.floor(mins / 60);
+    let minutes = mins % 60;
+    let ampm = hours >= 12 ? 'PM' : 'AM';
+    let displayHours = hours % 12;
+    if (displayHours === 0) displayHours = 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+  let current = toMinutes(eventStartTime);
+  return schedule.map((seg, i) => {
+    const startTime = toTimeStr(current);
+    let duration = parseInt(seg.duration, 10);
+    if (isNaN(duration) || duration < 0) duration = 0;
+    const next = current + duration;
+    current = next;
+    return { ...seg, time: startTime, duration: duration ? `${duration} min` : '0 min' };
+  });
+};
+
+const AI_SYSTEM_PROMPT = `You are Show Flow Agent, an AI event schedule assistant. You help users upload, edit, and manage event schedules, with dynamic time recalculation, inline editing, drag-and-drop reordering, and more. You can only make changes to the schedule as allowed by the user. If a user asks for something outside your scope, politely decline.`;
+
+// Main event schedule manager component
+const ShowFlowAgent = () => {
+  // Placeholder state for schedule and alerts
+  const [schedule, setSchedule] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [summary, setSummary] = useState([]);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [inputValue, setInputValue] = useState('');
+
+  // Inline editing state
+  const [editIdx, setEditIdx] = useState(null);
+  const [editValues, setEditValues] = useState({});
+
+  // Undo/Redo state
+  const [history, setHistory] = useState([]); // stack of previous schedules
+  const [future, setFuture] = useState([]);   // stack of undone schedules
+
+  const alertTimeouts = useRef([]);
+  const toastTimeout = useRef(null);
+
+  // New state for feedback, theme, and accessibility
+  const [feedback, setFeedback] = useState({}); // { index: "feedback text" }
+  const [theme, setTheme] = useState('light');
+  const [fontSize, setFontSize] = useState(1);
+  const [highContrast, setHighContrast] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [now, setNow] = useState(new Date());
+  const [currentIdx, setCurrentIdx] = useState(null);
+  const [overrunIdx, setOverrunIdx] = useState(null);
+
+  // New state for alert selection
+  const [alertSegments, setAlertSegments] = useState([]); // array of indices
+
+  // New state for expanded notes
+  const [expandedNotesIdx, setExpandedNotesIdx] = useState(null);
+
+  // New: Track locked segments
+  const [lockedSegments, setLockedSegments] = useState([]); // array of indices
+  // New: Collapse/expand all notes
+  const [allNotesExpanded, setAllNotesExpanded] = useState(false);
+  // New: Keyboard shortcuts help modal
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // Debug: set now to a custom date/time
+  const [debugNow, setDebugNow] = useState(null);
+  const handleDebugNow = () => {
+    const input = prompt('Enter a time (e.g., 10:05 AM):', '10:05 AM');
+    if (!input) return;
+    const [time, modifier] = input.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    let nowDate = new Date();
+    if (modifier && modifier.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if (modifier && modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+    nowDate.setHours(hours);
+    nowDate.setMinutes(minutes);
+    nowDate.setSeconds(0);
+    nowDate.setMilliseconds(0);
+    setDebugNow(nowDate);
+    setNow(nowDate);
+  };
+  const handleResetDebugNow = () => {
+    setDebugNow(null);
+    setNow(new Date());
+  };
+
+  // Helper to push current schedule to history before change
+  const pushHistory = (prevSchedule) => {
+    setHistory(h => [...h, prevSchedule]);
+    setFuture([]); // clear redo stack on new action
+  };
+
+  // Handlers for drag-and-drop
+  const handleDragStart = (index) => setDraggedIndex(index);
+  const handleDragOver = (e) => e.preventDefault();
+  const handleDrop = (index) => {
+    if (draggedIndex === null || draggedIndex === index) return;
+    pushHistory(schedule);
+    const newOrder = reorder(schedule, draggedIndex, index);
+    const recalculated = recalculateTimes(newOrder);
+    setSchedule(recalculated);
+    setDraggedIndex(null);
+    setSummary((prev) => [
+      ...prev,
+      `Reordered segment '${schedule[draggedIndex]?.segment || ''}' to position ${index + 1} and recalculated times.`
+    ]);
+  };
+
+  // Add segment at index
+  const handleAddSegment = (index) => {
+    pushHistory(schedule);
+    const newSegment = {
+      time: '',
+      duration: '0',
+      segment: 'New Segment',
+      presenter: '',
+      notes: ''
+    };
+    const newSchedule = [...schedule];
+    newSchedule.splice(index, 0, newSegment);
+    const recalculated = recalculateTimes(newSchedule);
+    setSchedule(recalculated);
+    setSummary((prev) => [
+      ...prev,
+      `Added new segment at position ${index + 1} and recalculated times.`
+    ]);
+  };
+
+  // Remove segment at index
+  const handleRemoveSegment = (index) => {
+    pushHistory(schedule);
+    const removed = schedule[index];
+    const newSchedule = schedule.filter((_, i) => i !== index);
+    const recalculated = recalculateTimes(newSchedule);
+    setSchedule(recalculated);
+    setSummary((prev) => [
+      ...prev,
+      `Removed segment '${removed?.segment || ''}' at position ${index + 1} and recalculated times.`
+    ]);
+  };
+
+  // Parse schedule from textarea (robust, Excel-like)
+  const handleParseSchedule = () => {
+    pushHistory(schedule);
+    // Split lines, trim, and filter out empty
+    const lines = inputValue.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+    // Detect delimiter (tab, comma, or multiple spaces)
+    const delimiter = lines[0].includes('\t') ? '\t' : (lines[0].includes(',') ? ',' : /\s{2,}/.test(lines[0]) ? /\s{2,}/ : '\t');
+    // Parse header row
+    let headerLine = lines[0];
+    let headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase());
+    // Map header names to field keys
+    const colMap = {};
+    headers.forEach((h, idx) => {
+      if (h.includes('time')) colMap.time = idx;
+      else if (h.includes('duration')) colMap.duration = idx;
+      else if (h.includes('segment')) colMap.segment = idx;
+      else if (h.includes('presenter') || h.includes('facilitator') || h.includes('speaker') || h.includes('host')) colMap.presenter = idx;
+      else if (h.includes('note') || h.includes('feedback')) colMap.notes = idx;
+    });
+    // Parse data rows
+    const parsed = lines.slice(1).map(line => {
+      const cells = typeof delimiter === 'string' ? line.split(delimiter) : line.split(delimiter);
+      return {
+        time: cells[colMap.time] ? cells[colMap.time].trim() : '',
+        duration: cells[colMap.duration] ? cells[colMap.duration].trim() : '',
+        segment: cells[colMap.segment] ? cells[colMap.segment].trim() : '',
+        presenter: cells[colMap.presenter] ? cells[colMap.presenter].trim() : '',
+        notes: cells[colMap.notes] ? cells[colMap.notes].trim() : ''
+      };
+    });
+    const recalculated = recalculateTimes(parsed);
+    setSchedule(recalculated);
+    setSummary((prev) => [...prev, 'Parsed schedule from input and recalculated times.']);
+  };
+
+  // File upload handler
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      pushHistory(schedule);
+      const parsed = await parseExcelFile(file);
+      // If no duration, default to 30 min for demo
+      const withDefaults = parsed.map(seg => ({
+        ...seg,
+        duration: seg.duration || '30',
+      }));
+      const recalculated = recalculateTimes(withDefaults);
+      setSchedule(recalculated);
+      setSummary((prev) => [...prev, `Loaded schedule from file and recalculated times.`]);
+    } catch (err) {
+      alert('Failed to parse file. Please upload a valid .xlsx or .csv with columns: Time, Duration, Segment, Presenter.');
+    }
+  };
+
+  // Start editing a row
+  const handleEdit = (idx) => {
+    setEditIdx(idx);
+    setEditValues(schedule[idx]);
+  };
+
+  // Save edits
+  const handleSaveEdit = (idx) => {
+    pushHistory(schedule);
+    const updated = schedule.map((seg, i) => i === idx ? { ...editValues } : seg);
+    const recalculated = recalculateTimes(updated);
+    setSchedule(recalculated);
+    setEditIdx(null);
+    setEditValues({});
+    setSummary((prev) => [
+      ...prev,
+      `Edited segment '${editValues.segment}' at position ${idx + 1} and recalculated times.`
+    ]);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditIdx(null);
+    setEditValues({});
+  };
+
+  // Handle inline field change
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditValues(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Undo handler
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    setFuture(f => [schedule, ...f]);
+    const prev = history[history.length - 1];
+    setSchedule(prev);
+    setHistory(h => h.slice(0, h.length - 1));
+    setSummary((prevSummary) => [...prevSummary, 'Undid last change.']);
+  };
+
+  // Redo handler
+  const handleRedo = () => {
+    if (future.length === 0) return;
+    setHistory(h => [...h, schedule]);
+    const next = future[0];
+    setSchedule(next);
+    setFuture(f => f.slice(1));
+    setSummary((prevSummary) => [...prevSummary, 'Redid change.']);
+  };
+
+  // Helper: parse 'HH:MM AM/PM' to Date object for today or a given base date
+  // Updated: Accept rollToTomorrow param for correct live highlighting and alert scheduling
+  const getSegmentDate = (timeStr, baseDate = null, rollToTomorrow = false) => {
+    const ref = baseDate instanceof Date ? new Date(baseDate) : new Date();
+    let [time, modifier] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (modifier) {
+      if (modifier.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+      if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+    }
+    ref.setHours(hours);
+    ref.setMinutes(minutes);
+    ref.setSeconds(0);
+    ref.setMilliseconds(0);
+    // Only roll to tomorrow if requested (for alert scheduling)
+    if (rollToTomorrow && ref < new Date()) ref.setDate(ref.getDate() + 1);
+    return ref;
+  };
+
+  // Clear all scheduled alerts
+  const clearScheduledAlerts = () => {
+    alertTimeouts.current.forEach(timeoutId => clearTimeout(timeoutId));
+    alertTimeouts.current = [];
+  };
+
+  // Toggle alert for a segment (auto-schedule notification)
+  const toggleAlertSegment = (idx) => {
+    setAlertSegments(prev => {
+      let updated;
+      if (prev.includes(idx)) {
+        updated = prev.filter(i => i !== idx);
+      } else {
+        updated = [...prev, idx];
+      }
+      // Immediately update alerts for the new selection
+      scheduleAlertsForSegments(updated);
+      return updated;
+    });
+  };
+
+  // Helper to schedule notifications for selected segments
+  const scheduleAlertsForSegments = (segmentIndices) => {
+    clearScheduledAlerts();
+    if (!('Notification' in window)) {
+      setAlerts(['This browser does not support desktop notifications.']);
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission().then(perm => {
+        if (perm !== 'granted') {
+          setAlerts(['Notification permission denied.']);
+          return;
+        }
+        actuallySchedule(segmentIndices);
+      });
+    } else {
+      actuallySchedule(segmentIndices);
+    }
+  };
+
+  // Toast notification state
+  const [toast, setToast] = useState({ show: false, message: '' });
+  // Audio ref for alert sound
+  const alertAudioRef = useRef(null);
+
+  // Toast helpers
+  const showToast = (message) => {
+    setToast({ show: true, message });
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    toastTimeout.current = setTimeout(() => setToast({ show: false, message: '' }), 4000);
+  };
+
+  // Play alert sound
+  const playAlertSound = () => {
+    if (alertAudioRef.current) {
+      alertAudioRef.current.currentTime = 0;
+      alertAudioRef.current.play();
+    }
+  };
+
+  // Actually schedule the notifications
+  const actuallySchedule = (segmentIndices) => {
+    const now = new Date();
+    let count = 0;
+    segmentIndices.forEach(i => {
+      const seg = schedule[i];
+      if (!seg || !seg.time) return;
+      const segDate = getSegmentDate(seg.time);
+      const msUntil = segDate - now;
+      if (msUntil > 0) {
+        const timeoutId = setTimeout(() => {
+          // In-app toast/banner
+          showToast(`Segment: ${seg.segment || 'Untitled'} starts now!${seg.presenter ? ' Presenter: ' + seg.presenter : ''}`);
+          playAlertSound();
+          // Desktop notification (if supported)
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`Segment: ${seg.segment || 'Untitled'}`, {
+              body: `Starts at ${seg.time}${seg.presenter ? ' | Presenter: ' + seg.presenter : ''}`,
+              icon: '/styles/logo-mcaps.png',
+            });
+          }
+        }, msUntil);
+        alertTimeouts.current.push(timeoutId);
+        count++;
+      }
+    });
+    setAlerts([`Scheduled ${count} alert(s) for selected segments.`]);
+  };
+
+  // Accessibility: font size and contrast
+  useEffect(() => {
+    document.body.style.fontSize = fontSize + 'em';
+    document.body.style.background = highContrast ? '#000' : '';
+    document.body.style.color = highContrast ? '#fff' : '';
+  }, [fontSize, highContrast]);
+
+  // Live event progress and overrun detection
+  useEffect(() => {
+    if (!schedule.length) return;
+    let interval;
+    if (!debugNow) {
+      interval = setInterval(() => {
+        setNow(new Date());
+      }, 10000);
+    }
+    // Always recalculate currentIdx and overrunIdx when 'now', 'schedule', or 'debugNow' changes
+    const nowToUse = debugNow || now;
+    let found = false;
+    let overrun = null;
+    schedule.forEach((seg, i) => {
+      if (!seg.time) return;
+      const segDate = getSegmentDate(seg.time, nowToUse);
+      const nextSeg = schedule[i + 1];
+      const nextDate = nextSeg && nextSeg.time ? getSegmentDate(nextSeg.time, nowToUse) : null;
+      if (!found && segDate <= nowToUse && (!nextDate || nowToUse < nextDate)) {
+        setCurrentIdx(i);
+        found = true;
+      }
+      // Overrun: if now > next segment's start
+      if (nextDate && nowToUse > nextDate && i === currentIdx) {
+        overrun = i;
+      }
+    });
+    setOverrunIdx(overrun);
+    return () => interval && clearInterval(interval);
+  }, [schedule, now, debugNow]);
+
+  // Theme toggles (refined, only dark/light)
+  const toggleTheme = () => {
+    setTheme(t => (t === 'light' ? 'dark' : 'light'));
+    // Optionally, update body class for global dark mode
+    document.body.classList.toggle('dark', theme === 'light');
+  };
+
+  // QR code and sharing
+  const handleShowQR = () => setShowQR(q => !q);
+  const handleShare = () => {
+    const url = window.location.href;
+    setShareLink(url);
+    navigator.clipboard.writeText(url);
+    alert('Schedule link copied to clipboard!');
+  };
+
+  // Print/export
+  const handlePrint = () => window.print();
+
+  // Duplicate segment at index
+  const handleDuplicateSegment = (index) => {
+    pushHistory(schedule);
+    const segToCopy = schedule[index];
+    const newSeg = { ...segToCopy };
+    const newSchedule = [...schedule];
+    newSchedule.splice(index + 1, 0, newSeg);
+    const recalculated = recalculateTimes(newSchedule);
+    setSchedule(recalculated);
+    setSummary((prev) => [
+      ...prev,
+      `Duplicated segment '${segToCopy.segment}' at position ${index + 2} and recalculated times.`
+    ]);
+  };
+
+  // Lock/unlock segment
+  const handleToggleLock = (index) => {
+    setLockedSegments(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  // Collapse/expand all notes
+  const handleToggleAllNotes = () => {
+    setAllNotesExpanded(expanded => !expanded);
+    setExpandedNotesIdx(expandedNotesIdx => allNotesExpanded ? null : 'all');
+  };
+
+  // Export to Excel (XLSX)
+  const handleExportExcel = () => {
+    if (!schedule.length) return;
+    // Dynamically import xlsx only when needed
+    import('xlsx').then(XLSX => {
+      const ws = XLSX.utils.json_to_sheet(schedule.map(seg => ({
+        Time: seg.time,
+        Duration: seg.duration,
+        Segment: seg.segment,
+        Presenter: seg.presenter,
+        Notes: seg.notes
+      })));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Schedule');
+      XLSX.writeFile(wb, 'showflow-schedule.xlsx');
+    });
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.ctrlKey && e.key === 'z') { e.preventDefault(); handleUndo(); }
+      if (e.ctrlKey && e.key === 'y') { e.preventDefault(); handleRedo(); }
+      if (e.key === 'a' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault(); handleAddSegment(schedule.length);
+      }
+      if (e.key === '?') { e.preventDefault(); setShowShortcuts(true); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [schedule, handleUndo, handleRedo, handleAddSegment]);
+
+  // Session timer for current segment
+  const [segmentTimer, setSegmentTimer] = useState(0);
+  useEffect(() => {
+    if (currentIdx === null || !schedule[currentIdx]) return;
+    const seg = schedule[currentIdx];
+    const segDate = getSegmentDate(seg.time);
+    let duration = parseInt(seg.duration, 10) || 0;
+    const endDate = new Date(segDate.getTime() + duration * 60000);
+    const updateTimer = () => {
+      const nowTime = new Date();
+      const msLeft = endDate - nowTime;
+      setSegmentTimer(Math.max(0, Math.floor(msLeft / 1000)));
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [currentIdx, schedule]);
+
+  // Save schedule to localStorage for presenter view
+  useEffect(() => {
+    localStorage.setItem('showflow-schedule', JSON.stringify(schedule));
+  }, [schedule]);
+
+  // Clean up all timeouts/intervals on unmount
+  useEffect(() => {
+    return () => {
+      // Clear alert timeouts
+      alertTimeouts.current.forEach(timeoutId => clearTimeout(timeoutId));
+      alertTimeouts.current = [];
+      // Clear toast timeout
+      if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    };
+  }, []);
+
+  return (
+    <div className={`showflow-root ${theme}`}> 
+      {/* Toast/banner notification */}
+      {toast.show && (
+        <div className="showflow-toast">
+          <span role="img" aria-label="Alert" style={{marginRight:8}}>🔔</span>
+          {toast.message}
+        </div>
+      )}
+      {/* Audio element for alert sound */}
+      <audio ref={alertAudioRef} src="/styles/alert-chime.wav" preload="auto" />
+      <header className="logo-only-header">
+        <div className="logo-header-content">
+          <img
+            src={theme === 'dark' ? '/styles/showflowlogov3_dark.png' : '/styles/showflow-logo-new.png'}
+            alt="Show Flow Agent Logo"
+            className="prominent-logo"
+          />
+        </div>
+      </header>
+      <main className="showflow-main">
+        {/* Floating sticky bar for current segment */}
+        {currentIdx !== null && schedule[currentIdx] && (
+          <div className="showflow-current-sticky">
+            <span className="showflow-current-pulse" />
+            <strong>Now:</strong> {schedule[currentIdx].segment}
+            <span style={{marginLeft:8}}>{schedule[currentIdx].time}</span>
+            {/* Session timer widget */}
+            <span style={{marginLeft:16, color:'#6c7bbd', fontWeight:500}}>
+              <span role="img" aria-label="timer">⏳</span> {Math.floor(segmentTimer/60)}:{(segmentTimer%60).toString().padStart(2,'0')} left
+            </span>
+            {overrunIdx === currentIdx && <span style={{color:'red',marginLeft:8}}>Overrun!</span>}
+            {schedule[currentIdx+1] && (
+              <span style={{marginLeft:24,opacity:0.7}}>
+                <strong>Next Up:</strong> {schedule[currentIdx+1].segment} <span style={{marginLeft:8}}>{schedule[currentIdx+1].time}</span>
+              </span>
+            )}
+          </div>
+        )}
+        {/* Schedule Input Section */}
+        <section className="showflow-card">
+          <h2>Import Schedule</h2>
+          <textarea
+            className="showflow-textarea"
+            placeholder="Paste your schedule here..."
+            rows={6}
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+          />
+          <div className="showflow-input-actions">
+            <button className="showflow-btn primary" onClick={handleParseSchedule}>Parse Schedule</button>
+            <label className="showflow-file-upload">
+              <input type="file" accept=".xlsx,.csv" onChange={handleFileUpload} />
+              <span>Upload .xlsx or .csv</span>
+            </label>
+          </div>
+        </section>
+        {/* Schedule Table Display */}
+        <section className="showflow-card">
+          <h2>Current Schedule</h2>
+          <button className="showflow-btn" style={{marginBottom:12}} onClick={handleToggleAllNotes}>
+            {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
+          </button>
+          {schedule.length === 0 ? (
+            <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
+              <p style={{fontSize:'1.08em',marginBottom:16}}>
+                You can build your schedule here by adding segments.<br />
+                <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
+              </p>
+              <button
+                className="showflow-btn primary"
+                style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
+                onClick={() => handleAddSegment(0)}
+              >
+                + Start a New Schedule
+              </button>
+            </div>
+          ) : (
+            <div className="showflow-table-container">
+              <table className="showflow-table">
+                <thead>
+                  <tr>
+                    <th></th> {/* Alert icon column */}
+                    <th></th> {/* Lock icon column */}
+                    <th>Time</th>
+                    <th>Duration</th>
+                    <th>Segment</th>
+                    <th>Presenter</th>
+                    <th colSpan={5}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedule.map((seg, i) => (
+                    <React.Fragment key={i}>
+                      <tr
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDrop(i)}
+                        className={
+                          (draggedIndex === i ? 'dragged ' : '') +
+                          (i === currentIdx ? 'current-segment ' : '') +
+                          (i === currentIdx+1 ? 'next-segment ' : '') +
+                          (i === overrunIdx ? 'overrun' : '')
+                        }
+                        style={{ cursor: 'pointer', position: 'relative' }}
+                        onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
+                        title="Click to reveal or add notes"
+                      >
+                        {/* Animated pulse for current segment */}
+                        <td style={{textAlign:'center',width:32}}>
+                          {i === currentIdx ? (
+                            <span className="showflow-current-pulse" title="Current segment" />
+                          ) : (
+                            <button
+                              className="showflow-btn"
+                              style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
+                              title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
+                              onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
+                              tabIndex={0}
+                            >
+                              <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#232a5c':'#bbb'}}>
+                                {alertSegments.includes(i) ? '🔔' : '🔕'}
+                              </span>
+                            </button>
+                          )}
+                        </td>
+                        {/* Lock/Unlock button */}
+                        <td style={{textAlign:'center',width:32}}>
+                          <button
+                            className="showflow-btn"
+                            style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
+                            title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
+                            onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
+                            tabIndex={0}
+                          >
+                            <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bbd':'#bbb'}}>
+                              {lockedSegments.includes(i) ? '🔒' : '🔓'}
+                            </span>
+                          </button>
+                        </td>
+                        {editIdx === i ? (
+                          <>
+                            <td>{seg.time}</td>
+                            <td>
+                              <input
+                                name="duration"
+                                type="number"
+                                min="0"
+                                value={editValues.duration.replace(' min', '')}
+                                onChange={handleEditChange}
+                                className="showflow-input"
+                              />
+                              min
+                            </td>
+                            <td>
+                              <input
+                                name="segment"
+                                value={editValues.segment}
+                                onChange={handleEditChange}
+                                className="showflow-input"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                name="presenter"
+                                value={editValues.presenter}
+                                onChange={handleEditChange}
+                                className="showflow-input"
+                              />
+                            </td>
+                            <td colSpan={5}>
+                              <input
+                                name="notes"
+                                type="text"
+                                placeholder="Add notes or feedback..."
+                                value={editValues.notes}
+                                onChange={handleEditChange}
+                                className="showflow-input"
+                                style={{width:'120px'}}
+                              />
+                            </td>
+                            <td>
+                              <button className="showflow-btn success" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }}>Save</button>
+                              <button className="showflow-btn" onClick={e => { e.stopPropagation(); handleCancelEdit(); }}>Cancel</button>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td>{seg.time}</td>
+                            <td>{seg.duration}</td>
+                            <td>{seg.segment}</td>
+                            <td>{seg.presenter}</td>
+                            {/* Removed notes column here for cleaner look */}
+                            {/* Duplicate button */}
+                            <td>
+                              <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }} disabled={lockedSegments.includes(i)}>⧉</button>
+                            </td>
+                            {/* Add segment after */}
+                            <td>
+                              <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} disabled={lockedSegments.includes(i)}>+</button>
+                            </td>
+                            {/* Remove segment */}
+                            <td>
+                              <button className="showflow-btn danger" title="Remove segment" onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }} disabled={lockedSegments.includes(i)}>-</button>
+                            </td>
+                            {/* Edit segment */}
+                            <td>
+                              <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }} disabled={lockedSegments.includes(i)}>Edit</button>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                      {/* Expandable notes row */}
+                      {(allNotesExpanded || expandedNotesIdx === i) && editIdx !== i && (
+                        <tr>
+                          <td colSpan={10} style={{background:'#f8fafd',padding:'12px 24px'}}>
+                            <input
+                              type="text"
+                              placeholder="Add notes or feedback..."
+                              value={seg.notes || ''}
+                              onChange={e => {
+                                const updated = schedule.map((s, idx) => idx === i ? { ...s, notes: e.target.value } : s);
+                                pushHistory(schedule);
+                                setSchedule(updated);
+                              }}
+                              className="showflow-input"
+                              style={{width:'100%'}}
+                              autoFocus
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        {/* Summary Section */}
+        <section className="showflow-card">
+          <h2>Summary of Changes</h2>
+          <ul className="showflow-list">
+            {summary.length === 0 ? <li>No changes yet.</li> : summary.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </section>
+        {/* Export/Undo Controls */}
+        <section className="showflow-controls">
+          <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0}>Undo</button>
+          <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0}>Redo</button>
+          <button className="showflow-btn primary" onClick={handleExportExcel}>Export to Excel</button>
+          <button className="showflow-btn danger" onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }} title="Reset/Clear All" style={{marginLeft:16}}>Reset All</button>
+          {/* Presenter View Popout Button (hidden in dev/local for future production use) */}
+          {/*
+          <button className="showflow-btn" style={{marginLeft:16}} onClick={() => {
+            window.open('/presenter', '_blank', 'width=600,height=900');
+          }}>
+            Open Presenter View
+          </button>
+          */}
+        </section>
+        {/* Add QR code for presenter view */}
+        {/*
+        <section className="showflow-card">
+          <h2>Presenter View QR Code</h2>
+          <div style={{display:'flex',alignItems:'center',gap:16}}>
+            <select
+              className="showflow-input"
+              style={{fontSize:'1.1em',padding:'6px 12px'}}
+              value={shareLink}
+              onChange={e => setShareLink(e.target.value)}
+            >
+              <option value="">Select Presenter...</option>
+              {[...new Set(schedule.map(seg => seg.presenter).filter(Boolean))].map((presenter, idx) => (
+                <option key={idx} value={presenter}>{presenter}</option>
+              ))}
+            </select>
+            {shareLink && (
+              <QRCodeSVG
+                // value={`http://123.123.123.123:${window.location.port}/presenter?name=${encodeURIComponent(shareLink)}`}
+                // size={120}
+              />
+            )}
+          </div>
+          {shareLink && (
+            <div style={{marginTop:8,fontSize:'0.98em'}}>Scan to open Presenter View for <strong>{shareLink}</strong></div>
+          )}
+        </section>
+        */}
+      </main>
+      <footer className="showflow-footer">
+        <div className="footer-controls" style={{justifyContent:'center', width:'100%'}}>
+          <button className="showflow-btn" onClick={toggleTheme} title="Toggle dark/light mode">
+            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+          </button>
+          <button className="showflow-btn" onClick={handleDebugNow} title="Set custom time for live debug" style={{marginLeft:12}}>
+            🐞 Debug Now
+          </button>
+          {debugNow && (
+            <button className="showflow-btn danger" onClick={handleResetDebugNow} title="Reset to real time" style={{marginLeft:12}}>
+              Reset Debug
+            </button>
+          )}
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default ShowFlowAgent;
+

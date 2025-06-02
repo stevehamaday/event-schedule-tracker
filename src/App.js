@@ -50,6 +50,7 @@ const App = () => {
 
     return (
         <div className="App">
+            {/* Mobile nav and FAB are handled inside ShowFlowAgent */}
             <ShowFlowAgent />
         </div>
     );

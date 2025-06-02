@@ -1,1 +1,173 @@
 /* This file is a symlink or copy of docs/styles/main.css for local dev and build compatibility. */
+
+/* --- MOBILE-ONLY IMPROVEMENTS --- */
+@media (max-width: 768px) {
+  /* Layout: stack columns, reduce padding, full width cards */
+  .showflow-main {
+    padding: 0 4px 16px 4px;
+    margin: 0;
+    max-width: 100vw;
+  }
+  .showflow-flex {
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+  .showflow-main-left, .showflow-main-right {
+    min-width: 0;
+    max-width: 100vw;
+    margin: 0;
+    padding: 0;
+  }
+  .showflow-card, .showflow-ai-card {
+    padding: 12px 4px 10px 4px;
+    margin-bottom: 18px;
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(35,42,92,0.10);
+  }
+  /* Font and element sizing */
+  body, .showflow-card, .showflow-btn, .showflow-input, .showflow-list, .showflow-table th, .showflow-table td {
+    font-size: 1.08em !important;
+  }
+  .showflow-header-content {
+    padding: 10px 8px;
+  }
+  .showflow-logo {
+    height: 36px;
+    margin-right: 8px;
+  }
+  /* Table: horizontal scroll, larger touch targets */
+  .showflow-table-container {
+    overflow-x: auto;
+  }
+  .showflow-table th, .showflow-table td {
+    padding: 14px 8px;
+    font-size: 1em;
+  }
+  /* Buttons: larger, full width for key actions */
+  .showflow-btn, .showflow-footer .showflow-btn {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.1em;
+    padding: 12px 0;
+    width: 100%;
+    margin: 6px 0;
+    border-radius: 8px;
+  }
+  /* Inputs: larger, easier to tap */
+  .showflow-input, .showflow-textarea {
+    font-size: 1.1em;
+    padding: 14px 10px;
+    border-radius: 8px;
+  }
+  /* Mobile nav: hamburger menu */
+  .showflow-mobile-nav {
+    display: flex !important;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 54px;
+    background: #232a5c;
+    color: #fff;
+    z-index: 1001;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    box-shadow: 0 2px 8px rgba(35,42,92,0.13);
+  }
+  .showflow-mobile-nav .showflow-logo {
+    height: 32px;
+    margin: 0;
+  }
+  .showflow-mobile-nav .showflow-hamburger {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .showflow-mobile-nav .showflow-hamburger span {
+    display: block;
+    width: 28px;
+    height: 4px;
+    background: #fff;
+    margin: 4px 0;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  /* Hide desktop nav/header on mobile */
+  .showflow-header, .showflow-header-content, .logo-header-content {
+    display: none !important;
+  }
+  /* Show mobile nav only on mobile */
+  .showflow-mobile-nav {
+    display: flex !important;
+  }
+  /* Floating action button (FAB) for add segment */
+  .showflow-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 60px;
+    height: 60px;
+    background: #3bb273;
+    color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 18px rgba(35,42,92,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2em;
+    z-index: 1002;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+  }
+  .showflow-fab:active {
+    background: #2e8c5a;
+  }
+  /* Hide non-essential elements for mobile */
+  .showflow-footer {
+    padding: 12px 0 8px 0;
+    margin-top: 12px;
+  }
+  .footer-controls {
+    gap: 8px;
+  }
+  /* Touch drag-and-drop cues */
+  .showflow-table tr {
+    cursor: grab;
+    touch-action: pan-y;
+  }
+  .showflow-table tr:active {
+    cursor: grabbing;
+  }
+  /* Swipe gesture hint (add a class in JS for swipeable rows) */
+  .showflow-table tr.swipe-hint::after {
+    content: '⟵ Swipe to edit/delete';
+    display: block;
+    color: #888;
+    font-size: 0.9em;
+    text-align: right;
+    margin-top: 2px;
+    margin-right: 8px;
+  }
+  /* Accessibility: high contrast, larger tap targets */
+  .showflow-btn, .showflow-input, .showflow-textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Toast: reposition for mobile */
+  .showflow-toast {
+    top: 12px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    width: auto;
+    font-size: 1em;
+    padding: 10px 8px;
+  }
+}
+/* --- END MOBILE-ONLY IMPROVEMENTS --- */

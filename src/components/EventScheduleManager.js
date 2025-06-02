@@ -45,7 +45,9 @@ const recalculateTimes = (schedule, eventStartTime = '09:00 AM') => {
 
 const AI_SYSTEM_PROMPT = `You are Show Flow Agent, an AI event schedule assistant. You help users upload, edit, and manage event schedules, with dynamic time recalculation, inline editing, drag-and-drop reordering, and more. You can only make changes to the schedule as allowed by the user. If a user asks for something outside your scope, politely decline.`;
 
-// Main event schedule manager component
+// Mobile nav and FAB helpers
+const isMobile = () => window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+
 const ShowFlowAgent = () => {
   // Placeholder state for schedule and alerts
   const [schedule, setSchedule] = useState([]);
@@ -536,8 +538,38 @@ const ShowFlowAgent = () => {
     };
   }, []);
 
+  // Mobile nav state
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // FAB handler: add segment at end
+  const handleFabAddSegment = () => {
+    handleAddSegment(schedule.length);
+    if (isMobile()) window.scrollTo(0, document.body.scrollHeight);
+  };
+
   return (
-    <div className={`showflow-root ${theme}`}> 
+    <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>
+      {/* Mobile Nav (hamburger) */}
+      {isMobile() && (
+        <nav className="showflow-mobile-nav">
+          <img src="/styles/showflow-logo.png" alt="ShowFlow Logo" className="showflow-logo" />
+          <button className="showflow-hamburger" aria-label="Open menu" onClick={() => setMobileNavOpen(v => !v)}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </nav>
+      )}
+      {/* Mobile nav drawer (simple) */}
+      {isMobile() && mobileNavOpen && (
+        <div style={{position:'fixed',top:54,left:0,right:0,background:'#232a5c',color:'#fff',zIndex:1002,padding:'18px 0',textAlign:'center'}}>
+          <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={() => setMobileNavOpen(false)}>Close Menu</button>
+          <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={toggleTheme}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
+          <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleUndo} disabled={history.length === 0}>Undo</button>
+          <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleRedo} disabled={future.length === 0}>Redo</button>
+          <button className="showflow-btn danger" style={{width:'90%',margin:'8px 0'}} onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }}>Reset All</button>
+        </div>
+      )}
       {/* Toast/banner notification */}
       {toast.show && (
         <div className="showflow-toast">
@@ -827,6 +859,12 @@ const ShowFlowAgent = () => {
         </section>
         */}
       </main>
+      {/* Floating Action Button (FAB) for mobile add segment */}
+      {isMobile() && (
+        <button className="showflow-fab" aria-label="Add segment" onClick={handleFabAddSegment} title="Add segment">
+          +
+        </button>
+      )}
       <footer className="showflow-footer">
         <div className="footer-controls" style={{justifyContent:'center', width:'100%'}}>
           <button className="showflow-btn" onClick={toggleTheme} title="Toggle dark/light mode">

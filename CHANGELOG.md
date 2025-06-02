@@ -1,3 +1,19 @@
+## [1.2.0] - 2025-06-02
+
+### Added
+- Major mobile experience improvements: responsive layout, mobile navigation (hamburger menu), floating action button (FAB) for adding segments, and touch-friendly controls.
+- All mobile enhancements are isolated to screens 768px wide or less; desktop/regular view is unchanged.
+- Larger touch targets, improved font sizing, and swipe/drag cues for mobile users.
+- Accessibility improvements for mobile: larger tap targets, better contrast, and mobile-friendly toast notifications.
+
+### Changed
+- Updated `docs/styles/main.css` and `public/styles/main.css` to include mobile-only CSS using `@media (max-width: 768px)`.
+- Updated `EventScheduleManager.js` to render mobile navigation and FAB only on mobile devices.
+- No changes to desktop layout or features.
+
+### Deployment
+- After pushing these changes, test the site on a mobile device or emulator to verify the new mobile experience.
+
 ## [1.0.9] - 2025-05-30
 
 ### Added

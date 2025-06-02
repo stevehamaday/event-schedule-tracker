@@ -588,6 +588,45 @@ body.dark, .showflow-root.dark {
     font-size: 1em;
     padding: 10px 8px;
   }
+
+  /* Fix crunched upload button: stack and stretch on mobile */
+  .showflow-input-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .showflow-file-upload span {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 1.08em;
+    padding: 12px 0;
+    margin: 0;
+  }
+  /* Move notification and lock icons to the right on mobile */
+  .showflow-header-icons, .showflow-header-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    position: absolute;
+    right: 12px;
+    top: 10px;
+    z-index: 10;
+  }
+  /* If icons are inside a card header, make sure they float right */
+  .showflow-card-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .showflow-card-header .showflow-header-icons {
+    position: static;
+    margin-left: auto;
+  }
 }
 /* --- END MOBILE-ONLY IMPROVEMENTS --- */
 

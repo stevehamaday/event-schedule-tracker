@@ -616,6 +616,14 @@ const ShowFlowAgent = () => {
             rows={6}
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
+            onPaste={e => {
+              // Wait for paste to complete, then update inputValue and optionally auto-parse
+              setTimeout(() => {
+                setInputValue(e.target.value);
+                // Optionally auto-parse after paste
+                // handleParseSchedule();
+              }, 0);
+            }}
           />
           <div className="showflow-input-actions">
             <button className="showflow-btn primary" onClick={handleParseSchedule}>Parse Schedule</button>
@@ -677,11 +685,67 @@ const ShowFlowAgent = () => {
                         onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
                         title="Click to reveal or add notes"
                       >
-                        {/* Animated pulse for current segment */}
-                        <td style={{textAlign:'center',width:32}}>
-                          {i === currentIdx ? (
-                            <span className="showflow-current-pulse" title="Current segment" />
-                          ) : (
+                        {/* Render icons on the right for mobile, left for desktop */}
+                        {!isMobile() && (
+                          <>
+                            {/* Alert icon */}
+                            <td style={{textAlign:'center',width:32}}>
+                              {i === currentIdx ? (
+                                <span className="showflow-current-pulse" title="Current segment" />
+                              ) : (
+                                <button
+                                  className="showflow-btn"
+                                  style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
+                                  title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
+                                  onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
+                                  tabIndex={0}
+                                >
+                                  <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#232a5c':'#bbb'}}>
+                                    {alertSegments.includes(i) ? '🔔' : '🔕'}
+                                  </span>
+                                </button>
+                              )}
+                            </td>
+                            {/* Lock/Unlock button */}
+                            <td style={{textAlign:'center',width:32}}>
+                              <button
+                                className="showflow-btn"
+                                style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
+                                title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
+                                onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
+                                tabIndex={0}
+                              >
+                                <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bbd':'#bbb'}}>
+                                  {lockedSegments.includes(i) ? '🔒' : '🔓'}
+                                </span>
+                              </button>
+                            </td>
+                          </>
+                        )}
+                        <td>{seg.time}</td>
+                        <td>{seg.duration}</td>
+                        <td>{seg.segment}</td>
+                        <td>{seg.presenter}</td>
+                        {/* Removed notes column here for cleaner look */}
+                        {/* Duplicate button */}
+                        <td>
+                          <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }} disabled={lockedSegments.includes(i)}>⧉</button>
+                        </td>
+                        {/* Add segment after */}
+                        <td>
+                          <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} disabled={lockedSegments.includes(i)}>+</button>
+                        </td>
+                        {/* Remove segment */}
+                        <td>
+                          <button className="showflow-btn danger" title="Remove segment" onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }} disabled={lockedSegments.includes(i)}>-</button>
+                        </td>
+                        {/* Edit segment */}
+                        <td>
+                          <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }} disabled={lockedSegments.includes(i)}>Edit</button>
+                        </td>
+                        {/* On mobile, render icons at the end */}
+                        {isMobile() && (
+                          <td className="showflow-header-icons" style={{textAlign:'right',minWidth:64}}>
                             <button
                               className="showflow-btn"
                               style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
@@ -693,98 +757,24 @@ const ShowFlowAgent = () => {
                                 {alertSegments.includes(i) ? '🔔' : '🔕'}
                               </span>
                             </button>
-                          )}
-                        </td>
-                        {/* Lock/Unlock button */}
-                        <td style={{textAlign:'center',width:32}}>
-                          <button
-                            className="showflow-btn"
-                            style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                            title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
-                            onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
-                            tabIndex={0}
-                          >
-                            <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bbd':'#bbb'}}>
-                              {lockedSegments.includes(i) ? '🔒' : '🔓'}
-                            </span>
-                          </button>
-                        </td>
-                        {editIdx === i ? (
-                          <>
-                            <td>{seg.time}</td>
-                            <td>
-                              <input
-                                name="duration"
-                                type="number"
-                                min="0"
-                                value={editValues.duration.replace(' min', '')}
-                                onChange={handleEditChange}
-                                className="showflow-input"
-                              />
-                              min
-                            </td>
-                            <td>
-                              <input
-                                name="segment"
-                                value={editValues.segment}
-                                onChange={handleEditChange}
-                                className="showflow-input"
-                              />
-                            </td>
-                            <td>
-                              <input
-                                name="presenter"
-                                value={editValues.presenter}
-                                onChange={handleEditChange}
-                                className="showflow-input"
-                              />
-                            </td>
-                            <td colSpan={5}>
-                              <input
-                                name="notes"
-                                type="text"
-                                placeholder="Add notes or feedback..."
-                                value={editValues.notes}
-                                onChange={handleEditChange}
-                                className="showflow-input"
-                                style={{width:'120px'}}
-                              />
-                            </td>
-                            <td>
-                              <button className="showflow-btn success" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }}>Save</button>
-                              <button className="showflow-btn" onClick={e => { e.stopPropagation(); handleCancelEdit(); }}>Cancel</button>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td>{seg.time}</td>
-                            <td>{seg.duration}</td>
-                            <td>{seg.segment}</td>
-                            <td>{seg.presenter}</td>
-                            {/* Removed notes column here for cleaner look */}
-                            {/* Duplicate button */}
-                            <td>
-                              <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }} disabled={lockedSegments.includes(i)}>⧉</button>
-                            </td>
-                            {/* Add segment after */}
-                            <td>
-                              <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} disabled={lockedSegments.includes(i)}>+</button>
-                            </td>
-                            {/* Remove segment */}
-                            <td>
-                              <button className="showflow-btn danger" title="Remove segment" onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }} disabled={lockedSegments.includes(i)}>-</button>
-                            </td>
-                            {/* Edit segment */}
-                            <td>
-                              <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }} disabled={lockedSegments.includes(i)}>Edit</button>
-                            </td>
-                          </>
+                            <button
+                              className="showflow-btn"
+                              style={{background:'none',border:'none',padding:0,cursor:'pointer',marginLeft:8}}
+                              title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
+                              onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
+                              tabIndex={0}
+                            >
+                              <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bbd':'#bbb'}}>
+                                {lockedSegments.includes(i) ? '🔒' : '🔓'}
+                              </span>
+                            </button>
+                          </td>
                         )}
                       </tr>
                       {/* Expandable notes row */}
                       {(allNotesExpanded || expandedNotesIdx === i) && editIdx !== i && (
                         <tr>
-                          <td colSpan={10} style={{background:'#f8fafd',padding:'12px 24px'}}>
+                          <td colSpan={12} style={{background:'#f8fafd',padding:'12px 24px'}}>
                             <input
                               type="text"
                               placeholder="Add notes or feedback..."
@@ -808,78 +798,190 @@ const ShowFlowAgent = () => {
             </div>
           )}
         </section>
-        {/* Summary Section */}
+        {/* Summary/Action Log Section */}
         <section className="showflow-card">
-          <h2>Summary of Changes</h2>
-          <ul className="showflow-list">
-            {summary.length === 0 ? <li>No changes yet.</li> : summary.map((s, i) => <li key={i}>{s}</li>)}
-          </ul>
-        </section>
-        {/* Export/Undo Controls */}
-        <section className="showflow-controls">
-          <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0}>Undo</button>
-          <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0}>Redo</button>
-          <button className="showflow-btn primary" onClick={handleExportExcel}>Export to Excel</button>
-          <button className="showflow-btn danger" onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }} title="Reset/Clear All" style={{marginLeft:16}}>Reset All</button>
-          {/* Presenter View Popout Button (hidden in dev/local for future production use) */}
-          {/*
-          <button className="showflow-btn" style={{marginLeft:16}} onClick={() => {
-            window.open('/presenter', '_blank', 'width=600,height=900');
-          }}>
-            Open Presenter View
-          </button>
-          */}
-        </section>
-        {/* Add QR code for presenter view */}
-        {/*
-        <section className="showflow-card">
-          <h2>Presenter View QR Code</h2>
-          <div style={{display:'flex',alignItems:'center',gap:16}}>
-            <select
-              className="showflow-input"
-              style={{fontSize:'1.1em',padding:'6px 12px'}}
-              value={shareLink}
-              onChange={e => setShareLink(e.target.value)}
-            >
-              <option value="">Select Presenter...</option>
-              {[...new Set(schedule.map(seg => seg.presenter).filter(Boolean))].map((presenter, idx) => (
-                <option key={idx} value={presenter}>{presenter}</option>
-              ))}
-            </select>
-            {shareLink && (
-              <QRCodeSVG
-                // value={`http://123.123.123.123:${window.location.port}/presenter?name=${encodeURIComponent(shareLink)}`}
-                // size={120}
-              />
-            )}
+          <h2>Action Log</h2>
+          <div className="showflow-summary-container">
+            <div className="showflow-summary-column">
+              <h3>Recent Actions</h3>
+              <ul className="showflow-summary-list">
+                {summary.length === 0 && (
+                  <div className="showflow-empty" style={{textAlign:'center',padding:'16px 0'}}>
+                    <span style={{fontSize:'0.9em',color:'#666'}}>No recent actions to show.</span>
+                  </div>
+                )}
+                {summary.slice(-5).map((s, idx) => (
+                  <li key={idx} className="showflow-summary-item">
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="showflow-summary-column">
+              <h3>Scheduled Alerts</h3>
+              <ul className="showflow-summary-list">
+                {alerts.length === 0 && (
+                  <div className="showflow-empty" style={{textAlign:'center',padding:'16px 0'}}>
+                    <span style={{fontSize:'0.9em',color:'#666'}}>No alerts scheduled.</span>
+                  </div>
+                )}
+                {alerts.map((a, idx) => (
+                  <li key={idx} className="showflow-summary-item">
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          {shareLink && (
-            <div style={{marginTop:8,fontSize:'0.98em'}}>Scan to open Presenter View for <strong>{shareLink}</strong></div>
-          )}
         </section>
-        */}
+        {/* Debug/Settings Section (collapsed by default) */}
+        <section className="showflow-card" style={{marginTop:24}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <h2 style={{margin:0}}>Settings & Debug</h2>
+            <button className="showflow-btn" onClick={handleDebugNow} style={{marginLeft:8}}>Set Debug Now</button>
+          </div>
+          <div style={{marginTop:16}}>
+            <label style={{display:'block',marginBottom:8}}>
+              Font Size:
+              <input
+                type="range"
+                min="0.8"
+                max="1.5"
+                step="0.1"
+                value={fontSize}
+                onChange={e => setFontSize(parseFloat(e.target.value))}
+                style={{marginLeft:8,width:'calc(100% - 32px)',display:'inline-block'}}
+              />
+            </label>
+            <label style={{display:'block',marginBottom:8}}>
+              High Contrast:
+              <input
+                type="checkbox"
+                checked={highContrast}
+                onChange={e => setHighContrast(e.target.checked)}
+                style={{marginLeft:8}}
+              />
+            </label>
+            <label style={{display:'block',marginBottom:8}}>
+              Theme:
+              <select
+                value={theme}
+                onChange={e => setTheme(e.target.value)}
+                style={{marginLeft:8}}
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+          </div>
+          {/* Debug controls (hidden by default) */}
+          <div style={{marginTop:16}}>
+            <button className="showflow-btn" onClick={handleResetDebugNow} style={{marginRight:8}}>Reset Debug Now</button>
+            <button className="showflow-btn" onClick={() => setDebugNow(new Date())}>Set Now to Current Time</button>
+          </div>
+        </section>
       </main>
-      {/* Floating Action Button (FAB) for mobile add segment */}
-      {isMobile() && (
-        <button className="showflow-fab" aria-label="Add segment" onClick={handleFabAddSegment} title="Add segment">
-          +
-        </button>
-      )}
-      <footer className="showflow-footer">
-        <div className="footer-controls" style={{justifyContent:'center', width:'100%'}}>
-          <button className="showflow-btn" onClick={toggleTheme} title="Toggle dark/light mode">
-            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
-          </button>
-          <button className="showflow-btn" onClick={handleDebugNow} title="Set custom time for live debug" style={{marginLeft:12}}>
-            🐞 Debug Now
-          </button>
-          {debugNow && (
-            <button className="showflow-btn danger" onClick={handleResetDebugNow} title="Reset to real time" style={{marginLeft:12}}>
-              Reset Debug
+      {/* QR Code & Share Modal */}
+      {showQR && (
+        <div className="showflow-qr-modal">
+          <div className="showflow-qr-content">
+            <h2>Share Schedule</h2>
+            <p>Share this link with others to view the schedule:</p>
+            <input
+              type="text"
+              value={shareLink}
+              readOnly
+              className="showflow-input"
+              style={{width:'100%',marginBottom:16}}
+            />
+            <QRCodeSVG
+              value={shareLink}
+              size={128}
+              style={{marginBottom:16}}
+            />
+            <button className="showflow-btn primary" onClick={() => navigator.clipboard.writeText(shareLink)}>
+              Copy Link to Clipboard
             </button>
-          )}
+            <button className="showflow-btn" onClick={handleShowQR} style={{marginTop:8}}>
+              Close
+            </button>
+          </div>
         </div>
-      </footer>
+      )}
+      {/* Shortcuts Help Modal */}
+      {showShortcuts && (
+        <div className="showflow-shortcuts-modal">
+          <div className="showflow-shortcuts-content">
+            <h2>Keyboard Shortcuts</h2>
+            <button className="showflow-btn" onClick={() => setShowShortcuts(false)} style={{position:'absolute',top:8,right:8}}>✖️</button>
+            <div style={{maxHeight:'70vh',overflowY:'auto'}}>
+              <h3>Navigation</h3>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">⌨️</div>
+                <div className="showflow-shortcut-desc">Focus on schedule table</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">↑ ↓</div>
+                <div className="showflow-shortcut-desc">Navigate segments</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">← →</div>
+                <div className="showflow-shortcut-desc">Adjust time/duration</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Enter</div>
+                <div className="showflow-shortcut-desc">Edit selected segment</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Esc</div>
+                <div className="showflow-shortcut-desc">Cancel edit or close modal</div>
+              </div>
+              <h3 style={{marginTop:24}}>Editing</h3>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Tab</div>
+                <div className="showflow-shortcut-desc">Next field</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Shift + Tab</div>
+                <div className="showflow-shortcut-desc">Previous field</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Ctrl + Z</div>
+                <div className="showflow-shortcut-desc">Undo</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Ctrl + Y</div>
+                <div className="showflow-shortcut-desc">Redo</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Ctrl + A</div>
+                <div className="showflow-shortcut-desc">Select all</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Delete</div>
+                <div className="showflow-shortcut-desc">Remove segment</div>
+              </div>
+              <h3 style={{marginTop:24}}>Miscellaneous</h3>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">F1</div>
+                <div className="showflow-shortcut-desc">Show this help</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">F2</div>
+                <div className="showflow-shortcut-desc">Toggle theme</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">F5</div>
+                <div className="showflow-shortcut-desc">Refresh schedule</div>
+              </div>
+              <div className="showflow-shortcut-item">
+                <div className="showflow-shortcut-key">Ctrl + P</div>
+                <div className="showflow-shortcut-desc">Print schedule</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

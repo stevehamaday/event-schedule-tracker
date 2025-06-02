@@ -550,7 +550,7 @@ const ShowFlowAgent = () => {
       <header className="logo-only-header">
         <div className="logo-header-content">
           <img
-            src={theme === 'dark' ? '/styles/showflowlogov3_dark.png' : '/styles/showflow-logo-new.png'}
+            src={theme === 'dark' ? 'styles/showflowlogov3_dark.png' : 'styles/showflow-logo-new.png'}
             alt="Show Flow Agent Logo"
             className="prominent-logo"
           />

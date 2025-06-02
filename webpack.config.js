@@ -3,9 +3,9 @@ const path = require('path');
 module.exports = {
     entry: './src/index.js',
     output: {
-        path: path.resolve(__dirname, 'public/scripts'),
+        path: path.resolve(__dirname, 'docs/scripts'),
         filename: 'bundle.js',
-        publicPath: '/' // Changed from '/scripts/' to '/' for proper SPA routing
+        publicPath: '/' // SPA routing
     },
     module: {
         rules: [
@@ -38,11 +38,11 @@ module.exports = {
         ]
     },
     devServer: {
-        contentBase: path.join(__dirname, 'public'),
+        contentBase: path.join(__dirname, 'public'), // Use 'public' for local dev
         compress: true,
         port: 9000,
         open: true,
-        historyApiFallback: true // Added to support SPA routing for /presenter and other client-side routes
+        historyApiFallback: true // SPA routing
     },
     resolve: {
         extensions: ['.js', '.jsx']

@@ -867,7 +867,16 @@ const ShowFlowAgent = () => {
                               </td>
                               {/* On mobile, render icons at the end */}
                               {isMobileDevice && (
-                                <td className="showflow-header-icons" style={{textAlign:'right',minWidth:64,display:'flex',gap:'8px',justifyContent:'flex-end',alignItems:'center'}}>
+                                <td className="showflow-header-icons" style={{
+                                  textAlign: 'right',
+                                  minWidth: 96, // increased from 64
+                                  display: 'flex',
+                                  gap: '12px', // increased from 8px
+                                  justifyContent: 'flex-end',
+                                  alignItems: 'center',
+                                  overflowX: 'auto', // allow horizontal scroll if needed
+                                  paddingRight: 8
+                                }}>
                                   <button
                                     className="showflow-btn"
                                     style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
@@ -1020,11 +1029,11 @@ const ShowFlowAgent = () => {
           }}>
             <button
               className="showflow-btn"
-              style={{ width: '100%', fontSize: '1.2em', padding: '16px 0', borderRadius: 0, background: 'none', border: 'none' }}
+              style={{ width: '100%', fontSize: '1.2em', padding: '16px 0', borderRadius: 0, background: 'none', border: 'none', textAlign: 'center' }}
               onClick={() => setMobileFooterMenuOpen(v => !v)}
               aria-label="Show controls"
             >
-              ☰ More
+              ☰ Menu
             </button>
             {mobileFooterMenuOpen && (
               <div style={{

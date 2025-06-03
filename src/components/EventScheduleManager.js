@@ -403,7 +403,7 @@ const ShowFlowAgent = () => {
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(`Segment: ${seg.segment || 'Untitled'}`, {
               body: `Starts at ${seg.time}${seg.presenter ? ' | Presenter: ' + seg.presenter : ''}`,
-              icon: '/styles/logo-mcaps.png',
+              icon: 'styles/logo-mcaps.png',
             });
           }
         }, msUntil);
@@ -653,7 +653,7 @@ const ShowFlowAgent = () => {
           </div>
         )}
         {/* Audio element for alert sound */}
-        <audio ref={alertAudioRef} src="/styles/alert-chime.wav" preload="auto" />
+        <audio ref={alertAudioRef} src="styles/alert-chime.wav" preload="auto" />
         <header className="logo-only-header">
           <div className="logo-header-content">
             <img

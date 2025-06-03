@@ -55,5 +55,5 @@ module.exports = {
         fallback: {
             process: require.resolve('process/browser.js'),
         },
-    }
+    },
 };

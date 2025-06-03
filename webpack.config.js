@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
     entry: './src/index.js',
@@ -44,7 +45,15 @@ module.exports = {
         open: true,
         historyApiFallback: true // SPA routing
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            process: 'process/browser.js',
+        }),
+    ],
     resolve: {
-        extensions: ['.js', '.jsx']
+        extensions: ['.js', '.jsx'],
+        fallback: {
+            process: require.resolve('process/browser.js'),
+        },
     }
 };

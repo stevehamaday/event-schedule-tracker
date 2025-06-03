@@ -46,7 +46,7 @@ const recalculateTimes = (schedule, eventStartTime = '09:00 AM') => {
 const AI_SYSTEM_PROMPT = `You are Show Flow Agent, an AI event schedule assistant. You help users upload, edit, and manage event schedules, with dynamic time recalculation, inline editing, drag-and-drop reordering, and more. You can only make changes to the schedule as allowed by the user. If a user asks for something outside your scope, politely decline.`;
 
 // Mobile nav and FAB helpers
-const isMobile = () => window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+const isMobile = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
 
 class MobileErrorBoundary extends React.Component {
   constructor(props) {
@@ -578,8 +578,16 @@ const ShowFlowAgent = () => {
     if (isMobile()) window.scrollTo(0, document.body.scrollHeight);
   };
 
+  // Replace direct isMobile() calls with state
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  useEffect(() => {
+    setIsMobileDevice(isMobile());
+    const handler = () => setIsMobileDevice(isMobile());
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
   // Add a visible test element for mobile
-  const isMobileDevice = isMobile();
   return (
     <MobileErrorBoundary>
       {isMobileDevice && (
@@ -589,7 +597,7 @@ const ShowFlowAgent = () => {
       )}
       <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>
         {/* Mobile Nav (hamburger) */}
-        {isMobile() && (
+        {isMobileDevice && (
           <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
             <img
               src="/styles/showflow-logo.png"
@@ -623,7 +631,7 @@ const ShowFlowAgent = () => {
           </nav>
         )}
         {/* Mobile nav drawer (simple) */}
-        {isMobile() && mobileNavOpen && (
+        {isMobileDevice && mobileNavOpen && (
           <div style={{position:'fixed',top:54,left:0,right:0,background:'#232a5c',color:'#fff',zIndex:1002,padding:'18px 0',textAlign:'center'}}>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={() => setMobileNavOpen(false)}>Close Menu</button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={toggleTheme}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
@@ -636,7 +644,7 @@ const ShowFlowAgent = () => {
         {toast.show && (
           <div
             className="showflow-toast"
-            style={isMobile()
+            style={isMobileDevice
               ? { top: 64, width: '90vw', left: '5vw', right: '5vw', position: 'fixed', zIndex: 2001 }
               : {}}
           >
@@ -858,7 +866,7 @@ const ShowFlowAgent = () => {
                                 <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }} disabled={lockedSegments.includes(i)}>Edit</button>
                               </td>
                               {/* On mobile, render icons at the end */}
-                              {isMobile() && (
+                              {isMobileDevice && (
                                 <td className="showflow-header-icons" style={{textAlign:'right',minWidth:64,display:'flex',gap:'8px',justifyContent:'flex-end',alignItems:'center'}}>
                                   <button
                                     className="showflow-btn"
@@ -995,7 +1003,7 @@ const ShowFlowAgent = () => {
           )}
         </main>
         {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}
-        {isMobile() ? (
+        {isMobileDevice ? (
           <footer className="showflow-footer-controls" style={{
             position: 'fixed',
             bottom: 0,

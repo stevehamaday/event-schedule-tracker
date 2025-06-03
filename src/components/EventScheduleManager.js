@@ -542,6 +542,8 @@ const ShowFlowAgent = () => {
 
   // Mobile nav state
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Add state for mobile footer dropdown
+  const [mobileFooterMenuOpen, setMobileFooterMenuOpen] = useState(false);
 
   // FAB handler: add segment at end
   const handleFabAddSegment = () => {
@@ -553,9 +555,32 @@ const ShowFlowAgent = () => {
     <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>
       {/* Mobile Nav (hamburger) */}
       {isMobile() && (
-        <nav className="showflow-mobile-nav">
-          <img src="/styles/showflow-logo.png" alt="ShowFlow Logo" className="showflow-logo" />
-          <button className="showflow-hamburger" aria-label="Open menu" onClick={() => setMobileNavOpen(v => !v)}>
+        <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
+          <img
+            src="/styles/showflow-logo.png"
+            alt="ShowFlow Logo"
+            className="showflow-logo"
+            style={{
+              maxWidth: '80vw',
+              height: 'auto',
+              display: 'block',
+              margin: '0 auto',
+              padding: '8px 0'
+            }}
+          />
+          <button
+            className="showflow-hamburger"
+            aria-label="Open menu"
+            onClick={() => setMobileNavOpen(v => !v)}
+            style={{
+              position: 'absolute',
+              right: 16,
+              top: 12,
+              fontSize: 28,
+              background: 'none',
+              border: 'none'
+            }}
+          >
             <span></span>
             <span></span>
             <span></span>
@@ -574,8 +599,13 @@ const ShowFlowAgent = () => {
       )}
       {/* Toast/banner notification */}
       {toast.show && (
-        <div className="showflow-toast">
-          <span role="img" aria-label="Alert" style={{marginRight:8}}>🔔</span>
+        <div
+          className="showflow-toast"
+          style={isMobile()
+            ? { top: 64, width: '90vw', left: '5vw', right: '5vw', position: 'fixed', zIndex: 2001 }
+            : {}}
+        >
+          <span role="img" aria-label="Alert" style={{ marginRight: 8 }}>🔔</span>
           {toast.message}
         </div>
       )}
@@ -593,18 +623,18 @@ const ShowFlowAgent = () => {
       <main className="showflow-main">
         {/* Floating sticky bar for current segment */}
         {currentIdx !== null && schedule[currentIdx] && (
-          <div className="showflow-current-sticky">
+          <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#f8fafd' } : {}}>
             <span className="showflow-current-pulse" />
             <strong>Now:</strong> {schedule[currentIdx].segment}
-            <span style={{marginLeft:8}}>{schedule[currentIdx].time}</span>
+            <span style={{ marginLeft: 8 }}>{schedule[currentIdx].time}</span>
             {/* Session timer widget */}
-            <span style={{marginLeft:16, color:'#6c7bbd', fontWeight:500}}>
-              <span role="img" aria-label="timer">⏳</span> {Math.floor(segmentTimer/60)}:{(segmentTimer%60).toString().padStart(2,'0')} left
+            <span style={{ marginLeft: 16, color: '#6c7bbd', fontWeight: 500 }}>
+              <span role="img" aria-label="timer">⏳</span> {Math.floor(segmentTimer / 60)}:{(segmentTimer % 60).toString().padStart(2, '0')} left
             </span>
-            {overrunIdx === currentIdx && <span style={{color:'red',marginLeft:8}}>Overrun!</span>}
-            {schedule[currentIdx+1] && (
-              <span style={{marginLeft:24,opacity:0.7}}>
-                <strong>Next Up:</strong> {schedule[currentIdx+1].segment} <span style={{marginLeft:8}}>{schedule[currentIdx+1].time}</span>
+            {overrunIdx === currentIdx && <span style={{ color: 'red', marginLeft: 8 }}>Overrun!</span>}
+            {schedule[currentIdx + 1] && (
+              <span style={{ marginLeft: 24, opacity: 0.7 }}>
+                <strong>Next Up:</strong> {schedule[currentIdx + 1].segment} <span style={{ marginLeft: 8 }}>{schedule[currentIdx + 1].time}</span>
               </span>
             )}
           </div>
@@ -794,7 +824,7 @@ const ShowFlowAgent = () => {
                             </td>
                             {/* On mobile, render icons at the end */}
                             {isMobile() && (
-                              <td className="showflow-header-icons" style={{textAlign:'right',minWidth:64}}>
+                              <td className="showflow-header-icons" style={{textAlign:'right',minWidth:64,display:'flex',gap:'8px',justifyContent:'flex-end',alignItems:'center'}}>
                                 <button
                                   className="showflow-btn"
                                   style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
@@ -808,7 +838,7 @@ const ShowFlowAgent = () => {
                                 </button>
                                 <button
                                   className="showflow-btn"
-                                  style={{background:'none',border:'none',padding:0,cursor:'pointer',marginLeft:8}}
+                                  style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
                                   title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
                                   onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
                                   tabIndex={0}
@@ -930,12 +960,64 @@ const ShowFlowAgent = () => {
         )}
       </main>
       {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}
-      <footer className="showflow-footer-controls" style={{position:'fixed',bottom:0,left:0,right:0,background:'#f8fafd',borderTop:'1px solid #e0e4f7',padding:'12px 0',display:'flex',justifyContent:'center',alignItems:'center',zIndex:1000,boxShadow:'0 -2px 8px rgba(60,80,160,0.04)'}}>
-        <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{marginRight:16}}>Undo</button>
-        <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
-        <button className="showflow-btn danger" onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }} style={{marginRight:24}}>Reset All</button>
-        <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
-      </footer>
+      {isMobile() ? (
+        <footer className="showflow-footer-controls" style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: '#f8fafd',
+          borderTop: '1px solid #e0e4f7',
+          padding: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          boxShadow: '0 -2px 8px rgba(60,80,160,0.04)'
+        }}>
+          <button
+            className="showflow-btn"
+            style={{ width: '100%', fontSize: '1.2em', padding: '16px 0', borderRadius: 0, background: 'none', border: 'none' }}
+            onClick={() => setMobileFooterMenuOpen(v => !v)}
+            aria-label="Show controls"
+          >
+            ☰ More
+          </button>
+          {mobileFooterMenuOpen && (
+            <div style={{
+              position: 'fixed',
+              bottom: 56,
+              left: 0,
+              right: 0,
+              background: '#fff',
+              zIndex: 2002,
+              boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+              borderTop: '1px solid #e0e4f7',
+              padding: '12px 0'
+            }}>
+              <button className="showflow-btn" onClick={toggleTheme} style={{ width: '90%', margin: '12px auto', display: 'block' }}>
+                {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+              </button>
+              <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Undo</button>
+              <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Redo</button>
+              <button className="showflow-btn danger" onClick={() => {
+                if (window.confirm('Are you sure you want to reset and clear the entire schedule?')) {
+                  setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false);
+                }
+              }} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Reset All</button>
+              <button className="showflow-btn" onClick={() => setMobileFooterMenuOpen(false)} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Close</button>
+            </div>
+          )}
+        </footer>
+      ) : (
+        // Desktop Footer Controls
+        <footer className="showflow-footer-controls" style={{position:'fixed',bottom:0,left:0,right:0,background:'#f8fafd',borderTop:'1px solid #e0e4f7',padding:'12px 0',display:'flex',justifyContent:'center',alignItems:'center',zIndex:1000,boxShadow:'0 -2px 8px rgba(60,80,160,0.04)'}}>
+          <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{marginRight:16}}>Undo</button>
+          <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
+          <button className="showflow-btn danger" onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }} style={{marginRight:24}}>Reset All</button>
+          <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
+        </footer>
+      )}
       {/* QR Code & Share Modal */}
       {showQR && (
         <div className="showflow-qr-modal">

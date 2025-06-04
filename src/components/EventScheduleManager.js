@@ -12,7 +12,16 @@ const reorder = (list, startIndex, endIndex) => {
 };
 
 // Helper to recalculate start times based on durations and event start time
-const recalculateTimes = (schedule, eventStartTime = '09:00 AM') => {
+const recalculateTimes = (schedule, eventStartTime = null) => {
+  // If no eventStartTime provided, check if first segment has a time
+  let actualStartTime = eventStartTime;
+  if (!actualStartTime && schedule.length > 0 && schedule[0].time) {
+    actualStartTime = schedule[0].time;
+  }
+  if (!actualStartTime) {
+    actualStartTime = '09:00 AM'; // fallback only if no time anywhere
+  }
+  
   // Convert eventStartTime to minutes since midnight
   const toMinutes = (timeStr) => {
     // Supports 'HH:MM AM/PM' or 'HH:MM' 24h
@@ -32,7 +41,7 @@ const recalculateTimes = (schedule, eventStartTime = '09:00 AM') => {
     if (displayHours === 0) displayHours = 12;
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
-  let current = toMinutes(eventStartTime);
+  let current = toMinutes(actualStartTime);
   return schedule.map((seg, i) => {
     const startTime = toTimeStr(current);
     let duration = parseInt(seg.duration, 10);
@@ -226,8 +235,7 @@ const ShowFlowAgent = () => {
         segment: cells[colMap.segment] ? cells[colMap.segment].trim() : '',
         presenter: cells[colMap.presenter] ? cells[colMap.presenter].trim() : '',
         notes: cells[colMap.notes] ? cells[colMap.notes].trim() : ''
-      };
-    });
+      };    });
     const recalculated = recalculateTimes(parsed);
     setSchedule(recalculated);
     setSummary((prev) => [...prev, 'Parsed schedule from input and recalculated times.']);

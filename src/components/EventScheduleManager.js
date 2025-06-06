@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { parseExcelFile } from '../utils/excelParser';
+import { parseExcelFile } from '../utils/excelParser'; // This path must be correct
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 
@@ -11,46 +11,81 @@ const reorder = (list, startIndex, endIndex) => {
   return result;
 };
 
-// Helper to recalculate start times based on durations and event start time
-const recalculateTimes = (schedule, eventStartTime = null) => {
-  // If no eventStartTime provided, check if first segment has a time
-  let actualStartTime = eventStartTime;
-  if (!actualStartTime && schedule.length > 0 && schedule[0].time) {
-    actualStartTime = schedule[0].time;
-  }
-  if (!actualStartTime) {
-    actualStartTime = '09:00 AM'; // fallback only if no time anywhere
-  }
-  
-  // Convert eventStartTime to minutes since midnight
+// *** REPLACED: This is the new, flexible recalculateTimes function ***
+const recalculateTimes = (schedule, mode = 'cascade') => {
+  if (!schedule || schedule.length === 0) return [];
+
   const toMinutes = (timeStr) => {
-    // Supports 'HH:MM AM/PM' or 'HH:MM' 24h
+    if (!timeStr || typeof timeStr !== 'string') return null;
     let [time, modifier] = timeStr.split(' ');
+    if (!time.includes(':')) return null;
     let [hours, minutes] = time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return null;
+
     if (modifier) {
       if (modifier.toUpperCase() === 'PM' && hours !== 12) hours += 12;
       if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
     }
     return hours * 60 + minutes;
   };
+
   const toTimeStr = (mins) => {
     let hours = Math.floor(mins / 60);
     let minutes = mins % 60;
     let ampm = hours >= 12 ? 'PM' : 'AM';
     let displayHours = hours % 12;
     if (displayHours === 0) displayHours = 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
   };
-  let current = toMinutes(actualStartTime);
-  return schedule.map((seg, i) => {
-    const startTime = toTimeStr(current);
-    let duration = parseInt(seg.duration, 10);
-    if (isNaN(duration) || duration < 0) duration = 0;
-    const next = current + duration;
-    current = next;
-    return { ...seg, time: startTime, duration: duration ? `${duration} min` : '0 min' };
-  });
+
+  // --- LOGIC FOR 'cascade' MODE (Your existing, preferred logic for edits) ---
+  if (mode === 'cascade') {
+    let actualStartTime = null;
+    if (schedule.length > 0 && schedule[0].time && toMinutes(schedule[0].time) !== null) {
+      actualStartTime = schedule[0].time;
+    } else {
+      actualStartTime = '09:00 AM'; // Fallback
+    }
+
+    let currentTimeInMinutes = toMinutes(actualStartTime);
+    return schedule.map(seg => {
+      const startTime = toTimeStr(currentTimeInMinutes);
+      const duration = parseInt(String(seg.duration).replace(/[^0-9]/g, ''), 10) || 0;
+      currentTimeInMinutes += duration; // Add duration for the next segment
+      return { ...seg, time: startTime, duration: `${duration} min` };
+    });
+  }
+
+  // --- LOGIC FOR 'preserve' MODE (Smarter logic for initial file upload) ---
+  if (mode === 'preserve') {
+    let lastKnownTimeInMinutes = null;
+    
+    const firstValidTime = toMinutes(schedule.find(seg => toMinutes(seg.time) !== null)?.time);
+    lastKnownTimeInMinutes = firstValidTime !== null ? firstValidTime : toMinutes('09:00 AM');
+
+    return schedule.map(seg => {
+      const segmentTimeInMinutes = toMinutes(seg.time);
+      let currentStartTimeInMinutes;
+
+      if (segmentTimeInMinutes !== null) {
+        currentStartTimeInMinutes = segmentTimeInMinutes;
+      } else {
+        currentStartTimeInMinutes = lastKnownTimeInMinutes;
+      }
+      
+      const newSeg = { ...seg, time: toTimeStr(currentStartTimeInMinutes) };
+      const duration = parseInt(String(newSeg.duration).replace(/[^0-9]/g, ''), 10) || 0;
+      newSeg.duration = `${duration} min`;
+      
+      lastKnownTimeInMinutes = currentStartTimeInMinutes + duration;
+      return newSeg;
+    });
+  }
+
+  // Failsafe
+  return schedule;
 };
+
 
 const AI_SYSTEM_PROMPT = `You are Show Flow Agent, an AI event schedule assistant. You help users upload, edit, and manage event schedules, with dynamic time recalculation, inline editing, drag-and-drop reordering, and more. You can only make changes to the schedule as allowed by the user. If a user asks for something outside your scope, politely decline.`;
 
@@ -253,7 +288,10 @@ const ShowFlowAgent = () => {
         ...seg,
         duration: seg.duration || '30',
       }));
-      const recalculated = recalculateTimes(withDefaults);
+
+      // *** UPDATED: This now uses the 'preserve' mode for the initial upload ***
+      const recalculated = recalculateTimes(withDefaults, 'preserve');
+      
       setSchedule(recalculated);
       setSummary((prev) => [...prev, `Loaded schedule from file and recalculated times.`]);
     } catch (err) {
@@ -314,7 +352,6 @@ const ShowFlowAgent = () => {
   };
 
   // Helper: parse 'HH:MM AM/PM' to Date object for today or a given base date
-  // Updated: Accept rollToTomorrow param for correct live highlighting and alert scheduling
   const getSegmentDate = (timeStr, baseDate = null, rollToTomorrow = false) => {
     const ref = baseDate instanceof Date ? new Date(baseDate) : new Date();
     let [time, modifier] = timeStr.split(' ');
@@ -1185,4 +1222,3 @@ const ShowFlowAgent = () => {
 };
 
 export default ShowFlowAgent;
-

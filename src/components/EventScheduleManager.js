@@ -649,6 +649,7 @@ const ShowFlowAgent = () => {
 
   // Helper: check if mobile device (refined)
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false); // <<< ADD THIS LINE
   useEffect(() => {
     const checkMobile = () => setIsMobileDevice(isMobile());
     checkMobile();

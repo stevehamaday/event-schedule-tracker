@@ -1,3 +1,20 @@
+## [1.2.1] - 2025-06-05
+
+### Fixed
+- **Critical Fix**: Resolved start time parsing issue where uploaded/pasted schedules always reverted to 9:00 AM start time
+- Modified `recalculateTimes` function in `EventScheduleManager.js` to preserve original start times from uploaded CSV/Excel files
+- Changed function parameter from `eventStartTime = '09:00 AM'` to `eventStartTime = null` to detect and use actual start times
+- Added logic to check first segment for existing time data before falling back to default 9:00 AM
+- Now correctly preserves uploaded start times (e.g., 8:30 AM) while maintaining all existing drag-and-drop and editing functionality
+
+### Changed
+- Improved parsing logic to be more intelligent about preserving user-provided time data
+- Enhanced time recalculation system to respect original schedule timing while still allowing manual edits
+
+### Deployment
+- Built and deployed to GitHub Pages with fixed parsing logic
+- Verified compatibility with existing React functionality including drag-and-drop, segment editing, and time recalculation
+
 ## [1.2.0] - 2025-06-02
 
 ### Added

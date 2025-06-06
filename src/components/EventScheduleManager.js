@@ -1141,7 +1141,7 @@ const ShowFlowAgent = () => {
               >
                 Export ▼
               </button>
-              <div id="export-dropdown" style={{ display: 'none', position: 'absolute', left: 0, top: '110%', background: '#fff', border: '1px solid #ccc', zIndex: 1001, minWidth: 120, boxShadow: '0 4px 16px rgba(60,80,160,0.10)', padding: '8px 0', borderRadius: 6 }}>
+              <div id="export-dropdown" style={{ display: 'none', position: 'absolute', left: 0, bottom: '110%', background: '#fff', border: '1px solid #ccc', zIndex: 1001, minWidth: 120, boxShadow: '0 4px 16px rgba(60,80,160,0.10)', padding: '8px 0', borderRadius: 6 }}>
                 <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#21a366', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('excel'); document.getElementById('export-dropdown').style.display = 'none'; }}>Excel (.xlsx)</button>
                 <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#217346', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('csv'); document.getElementById('export-dropdown').style.display = 'none'; }}>CSV (.csv)</button>
                 <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#444', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('json'); document.getElementById('export-dropdown').style.display = 'none'; }}>JSON (.json)</button>

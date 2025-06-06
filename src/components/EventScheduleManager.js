@@ -671,7 +671,7 @@ const ShowFlowAgent = () => {
         {isMobileDevice && (
           <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
             <img
-              src="/styles/showflow-logo.png"
+              src="styles/showflow-logo.png"
               alt="ShowFlow Logo"
               className="showflow-logo"
               style={{

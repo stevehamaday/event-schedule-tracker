@@ -125,13 +125,3 @@ export const parseExcelFile = (file) => {
     }
   });
 };
-
-export const formatEventData = (data) => {
-    return data.map(event => ({
-        id: event.ID,
-        title: event.Title,
-        startTime: new Date(event.StartTime),
-        duration: event.Duration,
-        status: event.Status || 'Upcoming'
-    }));
-};

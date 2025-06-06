@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { parseExcelFile } from '../utils/excelParser'; // This path must be correct
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
+import XLSX from 'xlsx';
 
 // Helper for drag-and-drop
 const reorder = (list, startIndex, endIndex) => {
@@ -547,21 +548,40 @@ const ShowFlowAgent = () => {
   };
 
   // Export to Excel (XLSX)
-  const handleExportExcel = () => {
-    if (!schedule.length) return;
-    // Dynamically import xlsx only when needed
-    import('xlsx').then(XLSX => {
-      const ws = XLSX.utils.json_to_sheet(schedule.map(seg => ({
-        Time: seg.time,
-        Duration: seg.duration,
-        Segment: seg.segment,
-        Presenter: seg.presenter,
-        Notes: seg.notes
-      })));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Schedule');
-      XLSX.writeFile(wb, 'showflow-schedule.xlsx');
-    });
+  const handleExportSchedule = (format) => {
+    if (format === 'excel') {
+      import('xlsx').then(XLSX => {
+        const ws = XLSX.utils.json_to_sheet(schedule);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Schedule');
+        XLSX.writeFile(wb, 'showflow-schedule.xlsx');
+      });
+    } else if (format === 'csv') {
+      import('xlsx').then(XLSX => {
+        const ws = XLSX.utils.json_to_sheet(schedule);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'showflow-schedule.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    } else if (format === 'json') {
+      const dataStr = JSON.stringify(schedule, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'showflow-schedule.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   // Keyboard shortcuts
@@ -596,40 +616,44 @@ const ShowFlowAgent = () => {
     return () => clearInterval(interval);
   }, [currentIdx, schedule]);
 
-  // Save schedule to localStorage for presenter view
+  // Restore schedule from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('showflow-schedule');
+    if (saved) {
+      try {
+        setSchedule(JSON.parse(saved));
+      } catch (e) {
+        // Ignore corrupted data
+      }
+    }
+  }, []);
+
+  // Save schedule to localStorage on every change
   useEffect(() => {
     localStorage.setItem('showflow-schedule', JSON.stringify(schedule));
   }, [schedule]);
 
-  // Clean up all timeouts/intervals on unmount
-  useEffect(() => {
-    return () => {
-      // Clear alert timeouts
-      alertTimeouts.current.forEach(timeoutId => clearTimeout(timeoutId));
-      alertTimeouts.current = [];
-      // Clear toast timeout
-      if (toastTimeout.current) clearTimeout(toastTimeout.current);
-    };
-  }, []);
-
-  // Mobile nav state
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  // Add state for mobile footer dropdown
-  const [mobileFooterMenuOpen, setMobileFooterMenuOpen] = useState(false);
-
-  // FAB handler: add segment at end
-  const handleFabAddSegment = () => {
-    handleAddSegment(schedule.length);
-    if (isMobile()) window.scrollTo(0, document.body.scrollHeight);
+  // In the Reset All handler, also clear localStorage
+  const handleResetAll = () => {
+    setSchedule([]);
+    setHistory([]);
+    setFuture([]);
+    setSummary([]);
+    setAlerts([]);
+    setAlertSegments([]);
+    setLockedSegments([]);
+    setExpandedNotesIdx(null);
+    setAllNotesExpanded(false);
+    localStorage.removeItem('showflow-schedule');
   };
 
-  // Replace direct isMobile() calls with state
+  // Helper: check if mobile device (refined)
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   useEffect(() => {
-    setIsMobileDevice(isMobile());
-    const handler = () => setIsMobileDevice(isMobile());
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    const checkMobile = () => setIsMobileDevice(isMobile());
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Add a visible test element for mobile
@@ -682,7 +706,7 @@ const ShowFlowAgent = () => {
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={toggleTheme}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleUndo} disabled={history.length === 0}>Undo</button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleRedo} disabled={future.length === 0}>Redo</button>
-            <button className="showflow-btn danger" style={{width:'90%',margin:'8px 0'}} onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }}>Reset All</button>
+            <button className="showflow-btn danger" style={{width:'90%',margin:'8px 0'}} onClick={handleResetAll}>Reset All</button>
           </div>
         )}
         {/* Toast/banner notification */}
@@ -1097,11 +1121,7 @@ const ShowFlowAgent = () => {
                 </button>
                 <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Undo</button>
                 <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Redo</button>
-                <button className="showflow-btn danger" onClick={() => {
-                  if (window.confirm('Are you sure you want to reset and clear the entire schedule?')) {
-                    setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false);
-                  }
-                }} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Reset All</button>
+                <button className="showflow-btn danger" onClick={handleResetAll} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Reset All</button>
                 <button className="showflow-btn" onClick={() => setMobileFooterMenuOpen(false)} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Close</button>
               </div>
             )}
@@ -1109,9 +1129,27 @@ const ShowFlowAgent = () => {
         ) : (
           // Desktop Footer Controls
           <footer className="showflow-footer-controls" style={{position:'fixed',bottom:0,left:0,right:0,background:'#f8fafd',borderTop:'1px solid #e0e4f7',padding:'12px 0',display:'flex',justifyContent:'center',alignItems:'center',zIndex:1000,boxShadow:'0 -2px 8px rgba(60,80,160,0.04)'}}>
+            <div style={{ position: 'relative', marginRight: 16 }}>
+              <button
+                className="showflow-btn"
+                style={{ background: '#21a366', color: '#fff', border: 'none', paddingRight: 24 }}
+                onClick={e => {
+                  const menu = document.getElementById('export-dropdown');
+                  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                }}
+                title="Export schedule"
+              >
+                Export ▼
+              </button>
+              <div id="export-dropdown" style={{ display: 'none', position: 'absolute', left: 0, top: '100%', background: '#fff', border: '1px solid #ccc', zIndex: 1001, minWidth: 120 }}>
+                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#21a366' }} onClick={() => { handleExportSchedule('excel'); document.getElementById('export-dropdown').style.display = 'none'; }}>Excel (.xlsx)</button>
+                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#217346' }} onClick={() => { handleExportSchedule('csv'); document.getElementById('export-dropdown').style.display = 'none'; }}>CSV (.csv)</button>
+                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#444' }} onClick={() => { handleExportSchedule('json'); document.getElementById('export-dropdown').style.display = 'none'; }}>JSON (.json)</button>
+              </div>
+            </div>
             <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{marginRight:16}}>Undo</button>
             <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
-            <button className="showflow-btn danger" onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }} style={{marginRight:24}}>Reset All</button>
+            <button className="showflow-btn danger" onClick={handleResetAll} style={{marginRight:24}}>Reset All</button>
             <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
           </footer>
         )}

@@ -157,7 +157,7 @@ const ShowFlowAgent = () => {
   const [expandedNotesIdx, setExpandedNotesIdx] = useState(null);
 
   // New: Track locked segments
-  const [lockedSegments, setLockedSegments] = useState([]); // array of indices
+
   // New: Collapse/expand all notes
   const [allNotesExpanded, setAllNotesExpanded] = useState(false);
   // New: Keyboard shortcuts help modal
@@ -532,14 +532,6 @@ const ShowFlowAgent = () => {
     ]);
   };
 
-  // Lock/unlock segment
-  const handleToggleLock = (index) => {
-    setLockedSegments(prev =>
-      prev.includes(index)
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
 
   // Collapse/expand all notes
   const handleToggleAllNotes = () => {
@@ -635,13 +627,11 @@ const ShowFlowAgent = () => {
 
   // In the Reset All handler, also clear localStorage
   const handleResetAll = () => {
-    setSchedule([]);
-    setHistory([]);
+    setSchedule([]);    setHistory([]);
     setFuture([]);
     setSummary([]);
     setAlerts([]);
     setAlertSegments([]);
-    setLockedSegments([]);
     setExpandedNotesIdx(null);
     setAllNotesExpanded(false);
     localStorage.removeItem('showflow-schedule');
@@ -826,22 +816,7 @@ const ShowFlowAgent = () => {
                                       {alertSegments.includes(i) ? '🔔' : '🔕'}
                                     </span>
                                   </button>
-                                )}
-                              </td>
-                              {/* Lock/Unlock button */}
-                              <td style={{textAlign:'center',width:32}}>
-                                <button
-                                  className="showflow-btn"
-                                  style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                  title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
-                                  onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
-                                  tabIndex={0}
-                                >
-                                  <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bd':'#bbb'}}>
-                                    {lockedSegments.includes(i) ? '🔒' : '🔓'}
-                                  </span>
-                                </button>
-                              </td>
+                                )}                              </td>
                             </>
                           )}
                           {/* Editable fields */}
@@ -898,19 +873,19 @@ const ShowFlowAgent = () => {
                               <td>{seg.presenter}</td>
                               {/* Duplicate button */}
                               <td>
-                                <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }} disabled={lockedSegments.includes(i)}>⧉</button>
+                                <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
                               </td>
                               {/* Add segment after */}
                               <td>
-                                <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} disabled={lockedSegments.includes(i)}>+</button>
+                                <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }}>+</button>
                               </td>
                               {/* Remove segment */}
                               <td>
-                                <button className="showflow-btn danger" title="Remove segment" onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }} disabled={lockedSegments.includes(i)}>-</button>
+                                <button className="showflow-btn danger" title="Remove segment" onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }}>-</button>
                               </td>
                               {/* Edit segment */}
                               <td>
-                                <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }} disabled={lockedSegments.includes(i)}>Edit</button>
+                                <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }}>Edit</button>
                               </td>                              {/* On mobile, render icons at the end */}
                               {isMobileDevice && (
                                 <td className="showflow-header-icons" style={{

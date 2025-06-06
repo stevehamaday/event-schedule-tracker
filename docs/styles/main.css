@@ -10,11 +10,19 @@ body {
     margin: 0;
     padding: 0;
     color: #222;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 body.dark, .showflow-root.dark {
     background: #181a1b !important;
     color: #f3f3f3 !important;
+}
+
+/* Ensure root container doesn't overflow */
+.showflow-root {
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .showflow-header {
@@ -421,11 +429,17 @@ body.dark, .showflow-root.dark {
 }
 /* --- MOBILE-ONLY IMPROVEMENTS --- */
 @media (max-width: 768px) {
-  /* Layout: stack columns, reduce padding, full width cards */
+  /* Ensure body doesn't overflow horizontally */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Layout: stack columns, increase padding for better visibility */
   .showflow-main {
-    padding: 0 4px 16px 4px;
+    padding: 64px 12px 16px 12px; /* Top padding for fixed nav */
     margin: 0;
     max-width: 100vw;
+    box-sizing: border-box;
   }
   .showflow-flex {
     flex-direction: column !important;
@@ -433,15 +447,21 @@ body.dark, .showflow-root.dark {
   }
   .showflow-main-left, .showflow-main-right {
     min-width: 0;
-    max-width: 100vw;
+    max-width: 100%;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
   }
   .showflow-card, .showflow-ai-card {
-    padding: 12px 4px 10px 4px;
+    padding: 16px 12px 12px 12px; /* Increased padding */
     margin-bottom: 18px;
+    margin-left: 0;
+    margin-right: 0;
     border-radius: 10px;
     box-shadow: 0 1px 6px rgba(35,42,92,0.10);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
   }
   /* Font and element sizing */
   body, .showflow-card, .showflow-btn, .showflow-input, .showflow-list, .showflow-table th, .showflow-table td {
@@ -453,14 +473,26 @@ body.dark, .showflow-root.dark {
   .showflow-logo {
     height: 36px;
     margin-right: 8px;
-  }
-  /* Table: horizontal scroll, larger touch targets */
+  }  /* Table: horizontal scroll, larger touch targets, prevent overflow */
   .showflow-table-container {
     overflow-x: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 -4px; /* Slight negative margin to use full width */
+    padding: 0 4px;
+  }
+  .showflow-table {
+    min-width: 100%;
+    width: auto;
+    box-sizing: border-box;
   }
   .showflow-table th, .showflow-table td {
-    padding: 14px 8px;
+    padding: 14px 6px; /* Reduced horizontal padding */
     font-size: 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px; /* Prevent overly wide cells */
   }
   /* Buttons: larger, full width for key actions */
   .showflow-btn, .showflow-footer .showflow-btn {
@@ -477,8 +509,7 @@ body.dark, .showflow-root.dark {
     font-size: 1.1em;
     padding: 14px 10px;
     border-radius: 8px;
-  }
-  /* Mobile nav: hamburger menu */
+  }  /* Mobile nav: hamburger menu */
   .showflow-mobile-nav {
     display: flex !important;
     position: fixed;
@@ -488,13 +519,15 @@ body.dark, .showflow-root.dark {
     color: #fff;
     z-index: 1001;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center; /* Center the logo */
     padding: 0 16px;
     box-shadow: 0 2px 8px rgba(35,42,92,0.13);
+    box-sizing: border-box;
   }
   .showflow-mobile-nav .showflow-logo {
     height: 32px;
     margin: 0;
+    max-width: calc(100vw - 32px); /* Ensure logo doesn't overflow */
   }
   .showflow-mobile-nav .showflow-hamburger {
     width: 36px;
@@ -577,16 +610,17 @@ body.dark, .showflow-root.dark {
   .showflow-btn, .showflow-input, .showflow-textarea {
     min-height: 44px;
     min-width: 44px;
-  }
-  /* Toast: reposition for mobile */
+  }  /* Toast: reposition for mobile, ensure it stays on screen */
   .showflow-toast {
-    top: 12px;
-    left: 8px;
-    right: 8px;
+    top: 64px; /* Below fixed nav */
+    left: 12px;
+    right: 12px;
     transform: none;
     width: auto;
+    max-width: calc(100vw - 24px);
     font-size: 1em;
-    padding: 10px 8px;
+    padding: 12px 16px;
+    box-sizing: border-box;
   }
 
   /* Fix crunched upload button: stack and stretch on mobile */

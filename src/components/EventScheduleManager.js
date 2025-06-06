@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { parseExcelFile } from '../utils/excelParser';
+import { parseExcelFile } from '../utils/excelParser'; // This path must be correct
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
+import XLSX from 'xlsx';
 
 // Helper for drag-and-drop
 const reorder = (list, startIndex, endIndex) => {
@@ -11,46 +12,81 @@ const reorder = (list, startIndex, endIndex) => {
   return result;
 };
 
-// Helper to recalculate start times based on durations and event start time
-const recalculateTimes = (schedule, eventStartTime = null) => {
-  // If no eventStartTime provided, check if first segment has a time
-  let actualStartTime = eventStartTime;
-  if (!actualStartTime && schedule.length > 0 && schedule[0].time) {
-    actualStartTime = schedule[0].time;
-  }
-  if (!actualStartTime) {
-    actualStartTime = '09:00 AM'; // fallback only if no time anywhere
-  }
-  
-  // Convert eventStartTime to minutes since midnight
+// *** REPLACED: This is the new, flexible recalculateTimes function ***
+const recalculateTimes = (schedule, mode = 'cascade') => {
+  if (!schedule || schedule.length === 0) return [];
+
   const toMinutes = (timeStr) => {
-    // Supports 'HH:MM AM/PM' or 'HH:MM' 24h
+    if (!timeStr || typeof timeStr !== 'string') return null;
     let [time, modifier] = timeStr.split(' ');
+    if (!time.includes(':')) return null;
     let [hours, minutes] = time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return null;
+
     if (modifier) {
       if (modifier.toUpperCase() === 'PM' && hours !== 12) hours += 12;
       if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
     }
     return hours * 60 + minutes;
   };
+
   const toTimeStr = (mins) => {
     let hours = Math.floor(mins / 60);
     let minutes = mins % 60;
     let ampm = hours >= 12 ? 'PM' : 'AM';
     let displayHours = hours % 12;
     if (displayHours === 0) displayHours = 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
   };
-  let current = toMinutes(actualStartTime);
-  return schedule.map((seg, i) => {
-    const startTime = toTimeStr(current);
-    let duration = parseInt(seg.duration, 10);
-    if (isNaN(duration) || duration < 0) duration = 0;
-    const next = current + duration;
-    current = next;
-    return { ...seg, time: startTime, duration: duration ? `${duration} min` : '0 min' };
-  });
+
+  // --- LOGIC FOR 'cascade' MODE (Your existing, preferred logic for edits) ---
+  if (mode === 'cascade') {
+    let actualStartTime = null;
+    if (schedule.length > 0 && schedule[0].time && toMinutes(schedule[0].time) !== null) {
+      actualStartTime = schedule[0].time;
+    } else {
+      actualStartTime = '09:00 AM'; // Fallback
+    }
+
+    let currentTimeInMinutes = toMinutes(actualStartTime);
+    return schedule.map(seg => {
+      const startTime = toTimeStr(currentTimeInMinutes);
+      const duration = parseInt(String(seg.duration).replace(/[^0-9]/g, ''), 10) || 0;
+      currentTimeInMinutes += duration; // Add duration for the next segment
+      return { ...seg, time: startTime, duration: `${duration} min` };
+    });
+  }
+
+  // --- LOGIC FOR 'preserve' MODE (Smarter logic for initial file upload) ---
+  if (mode === 'preserve') {
+    let lastKnownTimeInMinutes = null;
+    
+    const firstValidTime = toMinutes(schedule.find(seg => toMinutes(seg.time) !== null)?.time);
+    lastKnownTimeInMinutes = firstValidTime !== null ? firstValidTime : toMinutes('09:00 AM');
+
+    return schedule.map(seg => {
+      const segmentTimeInMinutes = toMinutes(seg.time);
+      let currentStartTimeInMinutes;
+
+      if (segmentTimeInMinutes !== null) {
+        currentStartTimeInMinutes = segmentTimeInMinutes;
+      } else {
+        currentStartTimeInMinutes = lastKnownTimeInMinutes;
+      }
+      
+      const newSeg = { ...seg, time: toTimeStr(currentStartTimeInMinutes) };
+      const duration = parseInt(String(newSeg.duration).replace(/[^0-9]/g, ''), 10) || 0;
+      newSeg.duration = `${duration} min`;
+      
+      lastKnownTimeInMinutes = currentStartTimeInMinutes + duration;
+      return newSeg;
+    });
+  }
+
+  // Failsafe
+  return schedule;
 };
+
 
 const AI_SYSTEM_PROMPT = `You are Show Flow Agent, an AI event schedule assistant. You help users upload, edit, and manage event schedules, with dynamic time recalculation, inline editing, drag-and-drop reordering, and more. You can only make changes to the schedule as allowed by the user. If a user asks for something outside your scope, politely decline.`;
 
@@ -121,7 +157,7 @@ const ShowFlowAgent = () => {
   const [expandedNotesIdx, setExpandedNotesIdx] = useState(null);
 
   // New: Track locked segments
-  const [lockedSegments, setLockedSegments] = useState([]); // array of indices
+
   // New: Collapse/expand all notes
   const [allNotesExpanded, setAllNotesExpanded] = useState(false);
   // New: Keyboard shortcuts help modal
@@ -253,7 +289,10 @@ const ShowFlowAgent = () => {
         ...seg,
         duration: seg.duration || '30',
       }));
-      const recalculated = recalculateTimes(withDefaults);
+
+      // *** UPDATED: This now uses the 'preserve' mode for the initial upload ***
+      const recalculated = recalculateTimes(withDefaults, 'preserve');
+      
       setSchedule(recalculated);
       setSummary((prev) => [...prev, `Loaded schedule from file and recalculated times.`]);
     } catch (err) {
@@ -314,7 +353,6 @@ const ShowFlowAgent = () => {
   };
 
   // Helper: parse 'HH:MM AM/PM' to Date object for today or a given base date
-  // Updated: Accept rollToTomorrow param for correct live highlighting and alert scheduling
   const getSegmentDate = (timeStr, baseDate = null, rollToTomorrow = false) => {
     const ref = baseDate instanceof Date ? new Date(baseDate) : new Date();
     let [time, modifier] = timeStr.split(' ');
@@ -494,14 +532,6 @@ const ShowFlowAgent = () => {
     ]);
   };
 
-  // Lock/unlock segment
-  const handleToggleLock = (index) => {
-    setLockedSegments(prev =>
-      prev.includes(index)
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
 
   // Collapse/expand all notes
   const handleToggleAllNotes = () => {
@@ -510,21 +540,40 @@ const ShowFlowAgent = () => {
   };
 
   // Export to Excel (XLSX)
-  const handleExportExcel = () => {
-    if (!schedule.length) return;
-    // Dynamically import xlsx only when needed
-    import('xlsx').then(XLSX => {
-      const ws = XLSX.utils.json_to_sheet(schedule.map(seg => ({
-        Time: seg.time,
-        Duration: seg.duration,
-        Segment: seg.segment,
-        Presenter: seg.presenter,
-        Notes: seg.notes
-      })));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Schedule');
-      XLSX.writeFile(wb, 'showflow-schedule.xlsx');
-    });
+  const handleExportSchedule = (format) => {
+    if (format === 'excel') {
+      import('xlsx').then(XLSX => {
+        const ws = XLSX.utils.json_to_sheet(schedule);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Schedule');
+        XLSX.writeFile(wb, 'showflow-schedule.xlsx');
+      });
+    } else if (format === 'csv') {
+      import('xlsx').then(XLSX => {
+        const ws = XLSX.utils.json_to_sheet(schedule);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'showflow-schedule.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    } else if (format === 'json') {
+      const dataStr = JSON.stringify(schedule, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'showflow-schedule.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   // Keyboard shortcuts
@@ -559,83 +608,64 @@ const ShowFlowAgent = () => {
     return () => clearInterval(interval);
   }, [currentIdx, schedule]);
 
-  // Save schedule to localStorage for presenter view
+  // Restore schedule from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('showflow-schedule');
+    if (saved) {
+      try {
+        setSchedule(JSON.parse(saved));
+      } catch (e) {
+        // Ignore corrupted data
+      }
+    }
+  }, []);
+
+  // Save schedule to localStorage on every change
   useEffect(() => {
     localStorage.setItem('showflow-schedule', JSON.stringify(schedule));
   }, [schedule]);
 
-  // Clean up all timeouts/intervals on unmount
-  useEffect(() => {
-    return () => {
-      // Clear alert timeouts
-      alertTimeouts.current.forEach(timeoutId => clearTimeout(timeoutId));
-      alertTimeouts.current = [];
-      // Clear toast timeout
-      if (toastTimeout.current) clearTimeout(toastTimeout.current);
-    };
-  }, []);
-
-  // Mobile nav state
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  // Add state for mobile footer dropdown
-  const [mobileFooterMenuOpen, setMobileFooterMenuOpen] = useState(false);
-
-  // FAB handler: add segment at end
-  const handleFabAddSegment = () => {
-    handleAddSegment(schedule.length);
-    if (isMobile()) window.scrollTo(0, document.body.scrollHeight);
+  // In the Reset All handler, also clear localStorage
+  const handleResetAll = () => {
+    setSchedule([]);    setHistory([]);
+    setFuture([]);
+    setSummary([]);
+    setAlerts([]);
+    setAlertSegments([]);
+    setExpandedNotesIdx(null);
+    setAllNotesExpanded(false);
+    localStorage.removeItem('showflow-schedule');
   };
 
-  // Replace direct isMobile() calls with state
+  // Helper: check if mobile device (refined)
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileFooterMenuOpen, setMobileFooterMenuOpen] = useState(false); // <<< ADD THIS LINE
   useEffect(() => {
-    setIsMobileDevice(isMobile());
-    const handler = () => setIsMobileDevice(isMobile());
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    const checkMobile = () => setIsMobileDevice(isMobile());
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  // Add a visible test element for mobile
   return (
     <MobileErrorBoundary>
-      {isMobileDevice && (
-        <div style={{ background: '#e0ffe0', color: '#232a5c', padding: 8, textAlign: 'center', fontWeight: 'bold', zIndex: 9999 }}>
-          [Mobile Render Test: If you see this, React is rendering on mobile.]
-        </div>
-      )}
       <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>
-        {/* Mobile Nav (hamburger) */}
+        {/* Mobile Nav - Clean logo banner only */}
         {isMobileDevice && (
           <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
             <img
-              src="/styles/showflow-logo.png"
+              src="styles/showflow-logo.png"
               alt="ShowFlow Logo"
               className="showflow-logo"
               style={{
-                maxWidth: '80vw',
+                maxWidth: '180px',
+                maxHeight: '40px',
                 height: 'auto',
                 display: 'block',
                 margin: '0 auto',
                 padding: '8px 0'
               }}
             />
-            <button
-              className="showflow-hamburger"
-              aria-label="Open menu"
-              onClick={() => setMobileNavOpen(v => !v)}
-              style={{
-                position: 'absolute',
-                right: 16,
-                top: 12,
-                fontSize: 28,
-                background: 'none',
-                border: 'none'
-              }}
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
           </nav>
         )}
         {/* Mobile nav drawer (simple) */}
@@ -645,7 +675,7 @@ const ShowFlowAgent = () => {
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={toggleTheme}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleUndo} disabled={history.length === 0}>Undo</button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleRedo} disabled={future.length === 0}>Redo</button>
-            <button className="showflow-btn danger" style={{width:'90%',margin:'8px 0'}} onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }}>Reset All</button>
+            <button className="showflow-btn danger" style={{width:'90%',margin:'8px 0'}} onClick={handleResetAll}>Reset All</button>
           </div>
         )}
         {/* Toast/banner notification */}
@@ -671,10 +701,9 @@ const ShowFlowAgent = () => {
             />
           </div>
         </header>
-        <main className="showflow-main">
-          {/* Floating sticky bar for current segment */}
+        <main className="showflow-main">          {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
-            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#f8fafd' } : {}}>
+            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#232a5c' } : {}}>
               <span className="showflow-current-pulse" />
               <strong>Now:</strong> {schedule[currentIdx].segment}
               <span style={{ marginLeft: 8 }}>{schedule[currentIdx].time}</span>
@@ -787,22 +816,7 @@ const ShowFlowAgent = () => {
                                       {alertSegments.includes(i) ? '🔔' : '🔕'}
                                     </span>
                                   </button>
-                                )}
-                              </td>
-                              {/* Lock/Unlock button */}
-                              <td style={{textAlign:'center',width:32}}>
-                                <button
-                                  className="showflow-btn"
-                                  style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                  title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
-                                  onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
-                                  tabIndex={0}
-                                >
-                                  <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bd':'#bbb'}}>
-                                    {lockedSegments.includes(i) ? '🔒' : '🔓'}
-                                  </span>
-                                </button>
-                              </td>
+                                )}                              </td>
                             </>
                           )}
                           {/* Editable fields */}
@@ -859,21 +873,20 @@ const ShowFlowAgent = () => {
                               <td>{seg.presenter}</td>
                               {/* Duplicate button */}
                               <td>
-                                <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }} disabled={lockedSegments.includes(i)}>⧉</button>
+                                <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
                               </td>
                               {/* Add segment after */}
                               <td>
-                                <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} disabled={lockedSegments.includes(i)}>+</button>
+                                <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }}>+</button>
                               </td>
                               {/* Remove segment */}
                               <td>
-                                <button className="showflow-btn danger" title="Remove segment" onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }} disabled={lockedSegments.includes(i)}>-</button>
+                                <button className="showflow-btn danger" title="Remove segment" onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }}>-</button>
                               </td>
                               {/* Edit segment */}
                               <td>
-                                <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }} disabled={lockedSegments.includes(i)}>Edit</button>
-                              </td>
-                              {/* On mobile, render icons at the end */}
+                                <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }}>Edit</button>
+                              </td>                              {/* On mobile, render icons at the end */}
                               {isMobileDevice && (
                                 <td className="showflow-header-icons" style={{
                                   textAlign: 'right',
@@ -885,28 +898,7 @@ const ShowFlowAgent = () => {
                                   overflowX: 'auto', // allow horizontal scroll if needed
                                   paddingRight: 8
                                 }}>
-                                  <button
-                                    className="showflow-btn"
-                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                    title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
-                                    onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
-                                    tabIndex={0}
-                                  >
-                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#232a5c':'#bbb'}}>
-                                      {alertSegments.includes(i) ? '🔔' : '🔕'}
-                                    </span>
-                                  </button>
-                                  <button
-                                    className="showflow-btn"
-                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                    title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
-                                    onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
-                                    tabIndex={0}
-                                  >
-                                    <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bd':'#bbb'}}>
-                                      {lockedSegments.includes(i) ? '🔒' : '🔓'}
-                                    </span>
-                                  </button>
+                                  {/* Alert and lock icons removed from mobile view to prevent overlap with Edit button */}
                                 </td>
                               )}
                             </>
@@ -1060,11 +1052,7 @@ const ShowFlowAgent = () => {
                 </button>
                 <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Undo</button>
                 <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Redo</button>
-                <button className="showflow-btn danger" onClick={() => {
-                  if (window.confirm('Are you sure you want to reset and clear the entire schedule?')) {
-                    setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false);
-                  }
-                }} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Reset All</button>
+                <button className="showflow-btn danger" onClick={handleResetAll} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Reset All</button>
                 <button className="showflow-btn" onClick={() => setMobileFooterMenuOpen(false)} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Close</button>
               </div>
             )}
@@ -1072,9 +1060,27 @@ const ShowFlowAgent = () => {
         ) : (
           // Desktop Footer Controls
           <footer className="showflow-footer-controls" style={{position:'fixed',bottom:0,left:0,right:0,background:'#f8fafd',borderTop:'1px solid #e0e4f7',padding:'12px 0',display:'flex',justifyContent:'center',alignItems:'center',zIndex:1000,boxShadow:'0 -2px 8px rgba(60,80,160,0.04)'}}>
+            <div style={{ position: 'relative', marginRight: 16 }}>
+              <button
+                className="showflow-btn"
+                style={{ background: '#21a366', color: '#fff', border: 'none', paddingRight: 24 }}
+                onClick={e => {
+                  const menu = document.getElementById('export-dropdown');
+                  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                }}
+                title="Export schedule"
+              >
+                Export ▼
+              </button>
+              <div id="export-dropdown" style={{ display: 'none', position: 'absolute', left: 0, bottom: '110%', background: '#fff', border: '1px solid #ccc', zIndex: 1001, minWidth: 120, boxShadow: '0 4px 16px rgba(60,80,160,0.10)', padding: '8px 0', borderRadius: 6 }}>
+                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#21a366', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('excel'); document.getElementById('export-dropdown').style.display = 'none'; }}>Excel (.xlsx)</button>
+                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#217346', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('csv'); document.getElementById('export-dropdown').style.display = 'none'; }}>CSV (.csv)</button>
+                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#444', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('json'); document.getElementById('export-dropdown').style.display = 'none'; }}>JSON (.json)</button>
+              </div>
+            </div>
             <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{marginRight:16}}>Undo</button>
             <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
-            <button className="showflow-btn danger" onClick={() => { if(window.confirm('Are you sure you want to reset and clear the entire schedule?')) { setSchedule([]); setHistory([]); setFuture([]); setSummary([]); setAlerts([]); setAlertSegments([]); setLockedSegments([]); setExpandedNotesIdx(null); setAllNotesExpanded(false); } }} style={{marginRight:24}}>Reset All</button>
+            <button className="showflow-btn danger" onClick={handleResetAll} style={{marginRight:24}}>Reset All</button>
             <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
           </footer>
         )}
@@ -1185,4 +1191,3 @@ const ShowFlowAgent = () => {
 };
 
 export default ShowFlowAgent;
-

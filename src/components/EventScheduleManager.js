@@ -682,8 +682,7 @@ const ShowFlowAgent = () => {
                 margin: '0 auto',
                 padding: '8px 0'
               }}
-            />
-            <button
+            />            <button
               className="showflow-hamburger"
               aria-label="Open menu"
               onClick={() => setMobileNavOpen(v => !v)}
@@ -691,14 +690,42 @@ const ShowFlowAgent = () => {
                 position: 'absolute',
                 right: 16,
                 top: 12,
-                fontSize: 28,
-                background: 'none',
-                border: 'none'
+                width: 40,
+                height: 40,
+                background: '#232a5c',
+                border: '1px solid #e0e4f7',
+                borderRadius: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer',
+                padding: 8
               }}
             >
-              <span></span>
-              <span></span>
-              <span></span>
+              <span style={{
+                display: 'block',
+                width: 20,
+                height: 2,
+                background: '#fff',
+                marginBottom: 3,
+                borderRadius: 1
+              }}></span>
+              <span style={{
+                display: 'block',
+                width: 20,
+                height: 2,
+                background: '#fff',
+                marginBottom: 3,
+                borderRadius: 1
+              }}></span>
+              <span style={{
+                display: 'block',
+                width: 20,
+                height: 2,
+                background: '#fff',
+                borderRadius: 1
+              }}></span>
             </button>
           </nav>
         )}
@@ -735,10 +762,9 @@ const ShowFlowAgent = () => {
             />
           </div>
         </header>
-        <main className="showflow-main">
-          {/* Floating sticky bar for current segment */}
+        <main className="showflow-main">          {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
-            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#d4e0ff' } : {}}>
+            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#232a5c' } : {}}>
               <span className="showflow-current-pulse" />
               <strong>Now:</strong> {schedule[currentIdx].segment}
               <span style={{ marginLeft: 8 }}>{schedule[currentIdx].time}</span>
@@ -936,8 +962,7 @@ const ShowFlowAgent = () => {
                               {/* Edit segment */}
                               <td>
                                 <button className="showflow-btn" title="Edit segment" onClick={e => { e.stopPropagation(); handleEdit(i); }} disabled={lockedSegments.includes(i)}>Edit</button>
-                              </td>
-                              {/* On mobile, render icons at the end */}
+                              </td>                              {/* On mobile, render icons at the end */}
                               {isMobileDevice && (
                                 <td className="showflow-header-icons" style={{
                                   textAlign: 'right',
@@ -949,28 +974,7 @@ const ShowFlowAgent = () => {
                                   overflowX: 'auto', // allow horizontal scroll if needed
                                   paddingRight: 8
                                 }}>
-                                  <button
-                                    className="showflow-btn"
-                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                    title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
-                                    onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
-                                    tabIndex={0}
-                                  >
-                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#232a5c':'#bbb'}}>
-                                      {alertSegments.includes(i) ? '🔔' : '🔕'}
-                                    </span>
-                                  </button>
-                                  <button
-                                    className="showflow-btn"
-                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                    title={lockedSegments.includes(i) ? 'Unlock segment' : 'Lock segment'}
-                                    onClick={e => { e.stopPropagation(); handleToggleLock(i); }}
-                                    tabIndex={0}
-                                  >
-                                    <span style={{fontSize:'1.2em',color:lockedSegments.includes(i)?'#6c7bd':'#bbb'}}>
-                                      {lockedSegments.includes(i) ? '🔒' : '🔓'}
-                                    </span>
-                                  </button>
+                                  {/* Alert and lock icons removed from mobile view to prevent overlap with Edit button */}
                                 </td>
                               )}
                             </>

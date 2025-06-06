@@ -675,8 +675,9 @@ const ShowFlowAgent = () => {
               alt="ShowFlow Logo"
               className="showflow-logo"
               style={{
-                maxWidth: '80vw',
-                height: 'auto',
+                maxWidth: '180px', // Changed from 80vw
+                maxHeight: '40px', // Added maxHeight
+                height: 'auto',    // Keep height auto to respect aspect ratio within maxHeight
                 display: 'block',
                 margin: '0 auto',
                 padding: '8px 0'
@@ -737,7 +738,7 @@ const ShowFlowAgent = () => {
         <main className="showflow-main">
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
-            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#f8fafd' } : {}}>
+            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#d4e0ff' } : {}}>
               <span className="showflow-current-pulse" />
               <strong>Now:</strong> {schedule[currentIdx].segment}
               <span style={{ marginLeft: 8 }}>{schedule[currentIdx].time}</span>

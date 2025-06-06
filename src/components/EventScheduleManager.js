@@ -657,17 +657,10 @@ const ShowFlowAgent = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  // Add a visible test element for mobile
   return (
     <MobileErrorBoundary>
-      {isMobileDevice && (
-        <div style={{ background: '#e0ffe0', color: '#232a5c', padding: 8, textAlign: 'center', fontWeight: 'bold', zIndex: 9999 }}>
-          [Mobile Render Test: If you see this, React is rendering on mobile.]
-        </div>
-      )}
       <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>
-        {/* Mobile Nav (hamburger) */}
+        {/* Mobile Nav - Clean logo banner only */}
         {isMobileDevice && (
           <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
             <img
@@ -675,58 +668,14 @@ const ShowFlowAgent = () => {
               alt="ShowFlow Logo"
               className="showflow-logo"
               style={{
-                maxWidth: '180px', // Changed from 80vw
-                maxHeight: '40px', // Added maxHeight
-                height: 'auto',    // Keep height auto to respect aspect ratio within maxHeight
+                maxWidth: '180px',
+                maxHeight: '40px',
+                height: 'auto',
                 display: 'block',
                 margin: '0 auto',
                 padding: '8px 0'
               }}
-            />            <button
-              className="showflow-hamburger"
-              aria-label="Open menu"
-              onClick={() => setMobileNavOpen(v => !v)}
-              style={{
-                position: 'absolute',
-                right: 16,
-                top: 12,
-                width: 40,
-                height: 40,
-                background: '#232a5c',
-                border: '1px solid #e0e4f7',
-                borderRadius: 6,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                cursor: 'pointer',
-                padding: 8
-              }}
-            >
-              <span style={{
-                display: 'block',
-                width: 20,
-                height: 2,
-                background: '#fff',
-                marginBottom: 3,
-                borderRadius: 1
-              }}></span>
-              <span style={{
-                display: 'block',
-                width: 20,
-                height: 2,
-                background: '#fff',
-                marginBottom: 3,
-                borderRadius: 1
-              }}></span>
-              <span style={{
-                display: 'block',
-                width: 20,
-                height: 2,
-                background: '#fff',
-                borderRadius: 1
-              }}></span>
-            </button>
+            />
           </nav>
         )}
         {/* Mobile nav drawer (simple) */}

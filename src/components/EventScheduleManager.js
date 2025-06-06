@@ -532,6 +532,10 @@ const ShowFlowAgent = () => {
     ]);
   };
 
+  // Check if any segments have notes
+  const hasNotesInSchedule = () => {
+    return schedule.some(seg => seg.notes && seg.notes.trim().length > 0);
+  };
 
   // Collapse/expand all notes
   const handleToggleAllNotes = () => {
@@ -744,15 +748,10 @@ const ShowFlowAgent = () => {
                 <span>Upload .xlsx or .csv</span>
               </label>
             </div>
-          </section>
-          {/* Schedule Table Display */}
+          </section>          {/* Schedule Table Display */}
           <section className="showflow-card">
             <h2>Current Schedule</h2>
-            <button className="showflow-btn" style={{marginBottom:12}} onClick={handleToggleAllNotes}>
-              {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
-            </button>
-            {schedule.length === 0 ? (
-              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
+            {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
                 <p style={{fontSize:'1.08em',marginBottom:16}}>
                   You can build your schedule here by adding segments.<br />
                   <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
@@ -766,6 +765,16 @@ const ShowFlowAgent = () => {
                 </button>
               </div>
             ) : (
+              <>
+                {hasNotesInSchedule() && (
+                  <button 
+                    className="showflow-btn" 
+                    style={{marginBottom:12}} 
+                    onClick={handleToggleAllNotes}
+                  >
+                    {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
+                  </button>
+                )}
               <div className="showflow-table-container">
                 <table className="showflow-table">
                   <thead>
@@ -926,9 +935,9 @@ const ShowFlowAgent = () => {
                         )}
                       </React.Fragment>
                     ))}
-                  </tbody>
-                </table>
+                  </tbody>                </table>
               </div>
+              </>
             )}
           </section>
           {/* Summary/Action Log Section */}

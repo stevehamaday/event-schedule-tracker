@@ -1,3 +1,19 @@
+## [1.2.2] - 2025-06-06
+
+### Added
+- Major mobile UI improvements and responsive design fixes (from experimental-fixes branch merge)
+- "Expand All Notes" button now appears only when notes exist and is moved below the "Start New Schedule" button
+
+### Removed
+- Lock functionality for schedule segments
+
+### Changed
+- Code cleanup and removal of backup files
+- All features tested and marked stable
+
+### Fixed
+- Responsive design issues on mobile and desktop
+
 ## [1.2.1] - 2025-06-05
 
 ### Fixed

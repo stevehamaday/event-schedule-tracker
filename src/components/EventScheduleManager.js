@@ -628,16 +628,17 @@ const ShowFlowAgent = () => {
   useEffect(() => {
     localStorage.setItem('showflow-schedule', JSON.stringify(schedule));
   }, [schedule]);
-
   // In the Reset All handler, also clear localStorage
   const handleResetAll = () => {
-    setSchedule([]);    setHistory([]);
+    setSchedule([]);
+    setHistory([]);
     setFuture([]);
     setSummary([]);
     setAlerts([]);
     setAlertSegments([]);
     setExpandedNotesIdx(null);
     setAllNotesExpanded(false);
+    setInputValue(''); // Clear the input box
     localStorage.removeItem('showflow-schedule');
   };
 
@@ -722,10 +723,28 @@ const ShowFlowAgent = () => {
                 </span>
               )}
             </div>
-          )}
-          {/* Schedule Input Section */}
+          )}          {/* Schedule Input Section */}
           <section className="showflow-card">
-            <h2>Import Schedule</h2>
+            <h2>Import or Paste Schedule (Single Day Only*)</h2>
+            <p style={{marginBottom: 16}}>
+              <a 
+                href="https://aka.ms/showflowtrackertemplate" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="showflow-btn"
+                style={{
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                  backgroundColor: '#6c7bbd',
+                  color: '#fff',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  fontSize: '0.9em'
+                }}
+              >
+                📋 Click for Schedule Template
+              </a>
+            </p>
             <textarea
               className="showflow-textarea"
               placeholder="Paste your schedule here..."
@@ -755,13 +774,12 @@ const ShowFlowAgent = () => {
                 <p style={{fontSize:'1.08em',marginBottom:16}}>
                   You can build your schedule here by adding segments.<br />
                   <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
-                </p>
-                <button
+                </p>                <button
                   className="showflow-btn primary"
                   style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
                   onClick={() => handleAddSegment(0)}
                 >
-                  + Start a New Schedule
+                  + Create a New Schedule
                 </button>
               </div>
             ) : (

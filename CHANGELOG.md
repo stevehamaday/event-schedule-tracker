@@ -1,3 +1,26 @@
+## [1.2.4] - 2025-06-10
+
+### Changed
+- **UI Improvement**: Improved schedule import header and messaging for better user experience
+- Updated main header from "Import or Paste Schedule (Single Day Only*)" to clean "Import or Paste Schedule"
+- Added professional subheading with single-day limitation and multi-day roadmap notice
+- Enhanced visual hierarchy with proper styling for limitation notice (smaller font, gray color, italic)
+- Improved user communication about current capabilities and future roadmap
+
+## [1.2.3] - 2025-06-10
+
+### Added
+- Template link integration for schedule format guidance
+- Enhanced "Reset All" functionality to clear localStorage and input textarea
+
+### Changed
+- Updated button text for creating a schedule to be more user-friendly ("+ Create a New Schedule")
+- Added prominent template link (https://aka.ms/showflowtrackertemplate) to help users format their schedules
+- Improved reset functionality to provide complete application cleanup
+
+### Fixed
+- Reset All button now properly clears all application state including localStorage persistence
+
 ## [1.2.2] - 2025-06-06
 
 ### Added

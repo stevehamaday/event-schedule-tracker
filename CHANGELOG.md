@@ -1,3 +1,14 @@
+## [1.2.5] - 2025-06-11
+
+### Added
+- **Bug Reporting**: Added "Report a Bug" button to the desktop footer controls
+- Bug report button links to https://aka.ms/sfbugtracker for easy issue submission
+- Button positioned to the right of the "Dark Mode" toggle in the bottom control panel
+
+### Changed
+- Enhanced footer controls layout to accommodate new bug reporting functionality
+- Improved user access to feedback and support channels
+
 ## [1.2.4] - 2025-06-10
 
 ### Changed

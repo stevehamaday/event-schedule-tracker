@@ -774,17 +774,17 @@ const ShowFlowAgent = () => {
           <section className="showflow-card">
             <h2>Current Schedule</h2>
             {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
-                <p style={{fontSize:'1.08em',marginBottom:16}}>
-                  You can build your schedule here by adding segments.<br />
-                  <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
-                </p>                <button
-                  className="showflow-btn primary"
-                  style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
-                  onClick={() => handleAddSegment(0)}
-                >
-                  + Create a New Schedule
-                </button>
-              </div>
+                  <p style={{fontSize:'1.08em',marginBottom:16}}>
+                    You can build your schedule here by adding segments.<br />
+                    <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
+                  </p>                <button
+                    className="showflow-btn primary"
+                    style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
+                    onClick={() => handleAddSegment(0)}
+                  >
+                    + Create a New Schedule
+                  </button>
+                </div>
             ) : (
               <>
                 {hasNotesInSchedule() && (
@@ -1112,6 +1112,15 @@ const ShowFlowAgent = () => {
             <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
             <button className="showflow-btn danger" onClick={handleResetAll} style={{marginRight:24}}>Reset All</button>
             <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
+            <a
+              href="https://aka.ms/sfbugtracker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="showflow-btn"
+              style={{ marginLeft: 8 }}
+            >
+              🐞 Report a Bug
+            </a>
           </footer>
         )}
         {/* QR Code & Share Modal */}

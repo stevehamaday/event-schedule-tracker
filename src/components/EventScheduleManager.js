@@ -725,7 +725,10 @@ const ShowFlowAgent = () => {
             </div>
           )}          {/* Schedule Input Section */}
           <section className="showflow-card">
-            <h2>Import or Paste Schedule (Single Day Only*)</h2>
+            <h2>Import or Paste Schedule</h2>
+            <p style={{fontSize: '0.85em', color: '#666', marginTop: '-8px', marginBottom: 16}}>
+              <em>Single-day events only • Multi-day support coming soon</em>
+            </p>
             <p style={{marginBottom: 16}}>
               <a 
                 href="https://aka.ms/showflowtrackertemplate" 

@@ -156,12 +156,9 @@ const ShowFlowAgent = () => {
   const [alertSegments, setAlertSegments] = useState([]); // array of indices
   // New state for expanded notes
   const [expandedNotesIdx, setExpandedNotesIdx] = useState(null);
-
   // Enhanced parser preview modal state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewData, setPreviewData] = useState(null);
-
-  // New: Track locked segments
 
   // New: Collapse/expand all notes
   const [allNotesExpanded, setAllNotesExpanded] = useState(false);
@@ -841,11 +838,9 @@ const ShowFlowAgent = () => {
                   </button>
                 )}
               <div className="showflow-table-container">
-                <table className="showflow-table">
-                  <thead>
+                <table className="showflow-table">                  <thead>
                     <tr>
                       <th></th> {/* Alert icon column */}
-                      <th></th> {/* Lock icon column */}
                       <th>Time</th>
                       <th>Duration</th>
                       <th>Segment</th>
@@ -870,8 +865,7 @@ const ShowFlowAgent = () => {
                           style={{ cursor: 'pointer', position: 'relative' }}
                           onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
                           title="Click to reveal or add notes"
-                        >
-                          {/* Render icons on the right for mobile, left for desktop */}
+                        >                          {/* Render icons on the right for mobile, left for desktop */}
                           {!isMobile() && (
                             <>
                               {/* Alert icon */}
@@ -889,13 +883,17 @@ const ShowFlowAgent = () => {
                                     <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#232a5c':'#bbb'}}>
                                       {alertSegments.includes(i) ? '🔔' : '🔕'}
                                     </span>
-                                  </button>
-                                )}                              </td>
+                                  </button>                                )}
+                              </td>
                             </>
-                          )}
-                          {/* Editable fields */}
+                          )}{/* Editable fields */}
                           {editIdx === i ? (
-                            <>
+                            <>                              {/* Icon columns for edit mode */}
+                              {!isMobile() && (
+                                <>
+                                  <td style={{textAlign:'center',width:32}}></td>
+                                </>
+                              )}
                               <td>
                                 <input
                                   name="time"
@@ -972,7 +970,7 @@ const ShowFlowAgent = () => {
                                   overflowX: 'auto', // allow horizontal scroll if needed
                                   paddingRight: 8
                                 }}>
-                                  {/* Alert and lock icons removed from mobile view to prevent overlap with Edit button */}
+                                  {/* Alert icon removed from mobile view to prevent overlap with Edit button */}
                                 </td>
                               )}
                             </>

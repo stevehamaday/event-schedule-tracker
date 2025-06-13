@@ -152,6 +152,37 @@ body.dark, .showflow-root.dark {
     background: #fff;
 }
 
+/* Build guidance panel styling */
+.showflow-build-guidance {
+  position: relative;
+}
+
+.showflow-build-guidance::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #cbd5e1;
+}
+
+/* Ensure input fields maintain good contrast */
+.showflow-input {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.showflow-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  outline: none !important;
+}
+
 .showflow-btn {
     background: #e9ecf5;
     color: #232a5c;
@@ -678,24 +709,6 @@ body.dark, .showflow-root.dark {
     transform: scale(1);
     box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
   }
-}
-
-/* Build guidance panel styling */
-.showflow-build-guidance {
-  position: relative;
-}
-
-.showflow-build-guidance::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid #0ea5e9;
 }
 
 body.dark .showflow-card h2 {

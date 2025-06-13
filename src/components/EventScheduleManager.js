@@ -1012,21 +1012,22 @@ const ShowFlowAgent = () => {
                         )}
                       </React.Fragment>
                     ))}                  </tbody>                </table>
-              </div>
-
-              {/* Helpful guidance for building schedule */}
+              </div>              {/* Helpful guidance for building schedule */}
               {schedule.length > 0 && schedule.length <= 3 && (
                 <div className="showflow-build-guidance" style={{
-                  backgroundColor: '#f0f9ff',
-                  border: '1px solid #0ea5e9',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #cbd5e1',
                   borderRadius: '8px',
                   padding: '16px',
                   marginTop: '16px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  opacity: editIdx !== null ? 0.6 : 1,
+                  transition: 'opacity 0.3s ease',
+                  pointerEvents: editIdx !== null ? 'none' : 'auto'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '1.2em' }}>🎯</span>
-                    <strong style={{ color: '#0369a1' }}>
+                    <span style={{ fontSize: '1.2em' }}>🎯</span>                    <strong style={{ color: '#1e293b' }}>
                       {schedule.length === 1 ? 'Great start! Keep building your schedule' : 'Looking good! Add more segments to complete your schedule'}
                     </strong>
                   </div>

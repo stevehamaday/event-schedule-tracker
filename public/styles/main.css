@@ -278,5 +278,18 @@ body {
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-bottom: 8px solid #0ea5e9;
+  border-bottom: 8px solid #cbd5e1;
+}
+
+/* Ensure input fields maintain good contrast */
+.showflow-input {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.showflow-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  outline: none !important;
 }

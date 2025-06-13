@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { parseExcelFile } from '../utils/excelParser'; // This path must be correct
+import { parseScheduleFile, parseClipboardData } from '../utils/enhancedParser';
+import DataPreviewModal from './DataPreviewModal';
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 import XLSX from 'xlsx';
@@ -152,9 +154,12 @@ const ShowFlowAgent = () => {
 
   // New state for alert selection
   const [alertSegments, setAlertSegments] = useState([]); // array of indices
-
   // New state for expanded notes
   const [expandedNotesIdx, setExpandedNotesIdx] = useState(null);
+
+  // Enhanced parser preview modal state
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
   // New: Track locked segments
 
@@ -241,9 +246,26 @@ const ShowFlowAgent = () => {
       `Removed segment '${removed?.segment || ''}' at position ${index + 1} and recalculated times.`
     ]);
   };
-
-  // Parse schedule from textarea (robust, Excel-like)
+  // Enhanced parse schedule from textarea with preview
   const handleParseSchedule = () => {
+    if (!inputValue.trim()) return;
+    
+    try {
+      // Use enhanced clipboard parser
+      const parseResult = parseClipboardData(inputValue);
+      
+      // Show preview modal
+      setPreviewData(parseResult);
+      setShowPreviewModal(true);
+      
+    } catch (err) {
+      // Fallback to old parser for compatibility
+      handleParseScheduleFallback();
+    }
+  };
+
+  // Fallback parser (original logic)
+  const handleParseScheduleFallback = () => {
     pushHistory(schedule);
     // Split lines, trim, and filter out empty
     const lines = inputValue.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -271,33 +293,55 @@ const ShowFlowAgent = () => {
         segment: cells[colMap.segment] ? cells[colMap.segment].trim() : '',
         presenter: cells[colMap.presenter] ? cells[colMap.presenter].trim() : '',
         notes: cells[colMap.notes] ? cells[colMap.notes].trim() : ''
-      };    });
+      };
+    });
     const recalculated = recalculateTimes(parsed);
     setSchedule(recalculated);
     setSummary((prev) => [...prev, 'Parsed schedule from input and recalculated times.']);
   };
-
-  // File upload handler
+  // Enhanced file upload handler with preview
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
     try {
-      pushHistory(schedule);
-      const parsed = await parseExcelFile(file);
-      // If no duration, default to 30 min for demo
-      const withDefaults = parsed.map(seg => ({
-        ...seg,
-        duration: seg.duration || '30',
-      }));
-
-      // *** UPDATED: This now uses the 'preserve' mode for the initial upload ***
-      const recalculated = recalculateTimes(withDefaults, 'preserve');
+      // Use enhanced parser
+      const parseResult = await parseScheduleFile(file);
       
-      setSchedule(recalculated);
-      setSummary((prev) => [...prev, `Loaded schedule from file and recalculated times.`]);
+      // Show preview modal
+      setPreviewData(parseResult);
+      setShowPreviewModal(true);
+      
     } catch (err) {
-      alert('Failed to parse file. Please upload a valid .xlsx or .csv with columns: Time, Duration, Segment, Presenter.');
+      alert(`Failed to parse file: ${err.message}`);
     }
+  };
+
+  // Handle accepting data from preview modal
+  const handleAcceptPreview = (data) => {
+    pushHistory(schedule);
+    
+    // Apply default duration if missing
+    const withDefaults = data.map(seg => ({
+      ...seg,
+      duration: seg.duration || '30',
+    }));
+
+    // Use preserve mode for initial upload
+    const recalculated = recalculateTimes(withDefaults, 'preserve');
+    
+    setSchedule(recalculated);
+    setSummary((prev) => [...prev, `Loaded schedule from ${previewData.metadata.fileName} with ${data.length} segments.`]);
+    
+    // Close modal
+    setShowPreviewModal(false);
+    setPreviewData(null);
+  };
+
+  // Handle rejecting data from preview modal
+  const handleRejectPreview = () => {
+    setShowPreviewModal(false);
+    setPreviewData(null);
   };
 
   // Start editing a row
@@ -1222,8 +1266,16 @@ const ShowFlowAgent = () => {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          </div>        )}
+
+        {/* Enhanced Data Preview Modal */}
+        <DataPreviewModal
+          isOpen={showPreviewModal}
+          onClose={handleRejectPreview}
+          parseResult={previewData}
+          onAccept={handleAcceptPreview}
+          onReject={handleRejectPreview}
+        />
       </div>
     </MobileErrorBoundary>
   );

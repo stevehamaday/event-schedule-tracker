@@ -946,10 +946,24 @@ const ShowFlowAgent = () => {
                               {/* Duplicate button */}
                               <td>
                                 <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
-                              </td>
-                              {/* Add segment after */}
+                              </td>                              {/* Add segment after */}
                               <td>
-                                <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }}>+</button>
+                                <button 
+                                  className={`showflow-btn ${schedule.length <= 2 ? 'primary' : ''}`}
+                                  title="Add segment after" 
+                                  onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }}
+                                  style={{
+                                    ...(schedule.length === 1 && i === 0 ? {
+                                      background: '#22c55e',
+                                      color: 'white',
+                                      fontWeight: 'bold',
+                                      animation: 'pulse 2s infinite',
+                                      boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.2)'
+                                    } : {})
+                                  }}
+                                >
+                                  {schedule.length === 1 && i === 0 ? '+ Add Next' : '+'}
+                                </button>
                               </td>
                               {/* Remove segment */}
                               <td>
@@ -997,9 +1011,70 @@ const ShowFlowAgent = () => {
                           </tr>
                         )}
                       </React.Fragment>
-                    ))}
-                  </tbody>                </table>
+                    ))}                  </tbody>                </table>
               </div>
+
+              {/* Helpful guidance for building schedule */}
+              {schedule.length > 0 && schedule.length <= 3 && (
+                <div className="showflow-build-guidance" style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #0ea5e9',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginTop: '16px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '1.2em' }}>🎯</span>
+                    <strong style={{ color: '#0369a1' }}>
+                      {schedule.length === 1 ? 'Great start! Keep building your schedule' : 'Looking good! Add more segments to complete your schedule'}
+                    </strong>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
+                    <button
+                      className="showflow-btn primary"
+                      onClick={() => handleAddSegment(schedule.length)}
+                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                    >
+                      + Add Next Segment
+                    </button>
+                    
+                    <button
+                      className="showflow-btn"
+                      onClick={() => handleAddSegment(0)}
+                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                    >
+                      + Add at Beginning
+                    </button>
+
+                    {schedule.length > 1 && (
+                      <button
+                        className="showflow-btn"
+                        onClick={() => handleAddSegment(Math.floor(schedule.length / 2))}
+                        style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                      >
+                        + Insert in Middle
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '0.85em', color: '#64748b', lineHeight: '1.4' }}>
+                    <div style={{ marginBottom: '4px' }}>
+                      💡 <strong>Quick tips:</strong> Click the <strong>+</strong> button next to any segment to add after it
+                    </div>
+                    <div>
+                      ⌨️ <strong>Keyboard shortcuts:</strong> Press <kbd style={{
+                        background: '#e2e8f0',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.8em',
+                        border: '1px solid #cbd5e1'
+                      }}>Ctrl+Enter</kbd> to add segments quickly
+                    </div>
+                  </div>
+                </div>
+              )}
               </>
             )}
           </section>
@@ -1265,6 +1340,36 @@ const ShowFlowAgent = () => {
               </div>
             </div>
           </div>        )}
+
+        {/* Mobile Floating Action Button for adding segments */}
+        {isMobileDevice && schedule.length > 0 && schedule.length <= 3 && (
+          <button
+            onClick={() => handleAddSegment(schedule.length)}
+            style={{
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              backgroundColor: '#22c55e',
+              color: 'white',
+              border: 'none',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              cursor: 'pointer',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease'
+            }}
+            title="Add next segment"
+          >
+            +
+          </button>
+        )}
 
         {/* Enhanced Data Preview Modal */}
         <DataPreviewModal

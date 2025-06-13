@@ -664,45 +664,40 @@ body.dark, .showflow-root.dark {
 }
 /* --- END MOBILE-ONLY IMPROVEMENTS --- */
 
-.showflow-root.dark .showflow-card,
-.showflow-root.dark .showflow-ai-card {
-    background: #23272b;
-    color: #f3f3f3;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-}
-.showflow-root.dark .showflow-header {
-    background: #101114;
-    color: #fff;
-}
-.showflow-root.dark .showflow-btn {
-    background: #232a5c;
-    color: #fff;
-}
-.showflow-root.dark .showflow-btn.primary {
-    background: #3b3f5c;
-    color: #fff;
-}
-.showflow-root.dark .showflow-table {
-    background: #23272b;
-    color: #f3f3f3;
-}
-.showflow-root.dark .showflow-table th {
-    background: #232a5c;
-    color: #fff;
-}
-.showflow-root.dark .showflow-table tr:hover:not(.dragged) {
-    background: #232a5c;
-}
-.showflow-root.dark .showflow-input {
-    background: #181a1b;
-    color: #f3f3f3;
-    border: 1px solid #444;
-}
-.showflow-root.dark .showflow-list li {
-    border-bottom: 1px solid #232a5c;
+/* Pulse animation for guidance buttons */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+  }
 }
 
-/* Dark mode improvements for section headings and text */
+/* Build guidance panel styling */
+.showflow-build-guidance {
+  position: relative;
+}
+
+.showflow-build-guidance::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #0ea5e9;
+}
+
 body.dark .showflow-card h2 {
   color: #fff !important;
   text-shadow: 0 2px 8px rgba(0,0,0,0.18);

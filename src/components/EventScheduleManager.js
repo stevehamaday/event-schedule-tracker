@@ -886,14 +886,9 @@ const ShowFlowAgent = () => {
                                   </button>                                )}
                               </td>
                             </>
-                          )}{/* Editable fields */}
+                          )}                          {/* Editable fields */}
                           {editIdx === i ? (
-                            <>                              {/* Icon columns for edit mode */}
-                              {!isMobile() && (
-                                <>
-                                  <td style={{textAlign:'center',width:32}}></td>
-                                </>
-                              )}
+                            <>
                               <td>
                                 <input
                                   name="time"

@@ -698,8 +698,8 @@ body.dark, .showflow-root.dark {
 /* Speaker View Styles */
 .showflow-speaker-view {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  align-items: stretch;
   justify-content: center;
   min-height: calc(100vh - 120px);
   background: linear-gradient(135deg, #232a5c 0%, #3c4e8a 100%);
@@ -709,13 +709,16 @@ body.dark, .showflow-root.dark {
   margin: 1rem 0;
   text-align: center;
   box-shadow: 0 8px 32px rgba(35, 42, 92, 0.3);
+  gap: 2rem;
 }
 
 .showflow-speaker-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2rem;
+  width: 100%;
 }
 
 .showflow-speaker-empty h1 {
@@ -734,12 +737,14 @@ body.dark, .showflow-root.dark {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   padding: 3rem;
-  margin-bottom: 2rem;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  max-width: 800px;
-  width: 100%;
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 400px;
 }
 
 .showflow-speaker-label {
@@ -784,6 +789,19 @@ body.dark, .showflow-root.dark {
   padding: 1rem 2rem;
   border-radius: 12px;
   margin-top: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.showflow-speaker-timer.warning {
+  background: rgba(255, 193, 7, 0.2);
+  border: 2px solid #ffc107;
+  animation: warningBlink 1s infinite;
+}
+
+.showflow-speaker-timer.critical {
+  background: rgba(220, 53, 69, 0.2);
+  border: 2px solid #dc3545;
+  animation: criticalBlink 0.5s infinite;
 }
 
 .showflow-speaker-timer-icon {
@@ -793,6 +811,14 @@ body.dark, .showflow-root.dark {
 .showflow-speaker-timer-text {
   color: #4ade80;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.showflow-speaker-timer.warning .showflow-speaker-timer-text {
+  color: #ffc107;
+}
+
+.showflow-speaker-timer.critical .showflow-speaker-timer-text {
+  color: #dc3545;
 }
 
 .showflow-speaker-overrun {
@@ -811,11 +837,13 @@ body.dark, .showflow-root.dark {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 2rem;
-  margin-bottom: 2rem;
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  max-width: 600px;
-  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 400px;
 }
 
 .showflow-speaker-next-title {
@@ -839,7 +867,9 @@ body.dark, .showflow-root.dark {
 }
 
 .showflow-speaker-controls {
-  margin-top: 2rem;
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
 }
 
 .showflow-btn.large {
@@ -853,13 +883,22 @@ body.dark, .showflow-root.dark {
 /* Mobile responsiveness for Speaker View */
 @media (max-width: 768px) {
   .showflow-speaker-view {
+    flex-direction: column;
     padding: 1rem;
     margin: 0.5rem 0;
     min-height: calc(100vh - 140px);
+    gap: 1rem;
   }
 
   .showflow-speaker-current {
     padding: 2rem;
+    flex: none;
+    min-height: auto;
+  }
+
+  .showflow-speaker-next {
+    flex: none;
+    min-height: auto;
   }
 
   .showflow-speaker-title {
@@ -890,6 +929,36 @@ body.dark, .showflow-root.dark {
   .showflow-speaker-overrun {
     font-size: 1.5rem;
     padding: 0.75rem 1.5rem;
+  }
+
+  .showflow-speaker-controls {
+    position: static;
+    margin-top: 2rem;
+  }
+}
+
+/* Warning and Critical Animations */
+@keyframes warningBlink {
+  0%, 50% {
+    background: rgba(255, 193, 7, 0.2);
+    border-color: #ffc107;
+  }
+  51%, 100% {
+    background: rgba(255, 193, 7, 0.4);
+    border-color: #ffdd57;
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+  }
+}
+
+@keyframes criticalBlink {
+  0%, 50% {
+    background: rgba(220, 53, 69, 0.2);
+    border-color: #dc3545;
+  }
+  51%, 100% {
+    background: rgba(220, 53, 69, 0.5);
+    border-color: #ff6b7a;
+    box-shadow: 0 0 25px rgba(220, 53, 69, 0.4);
   }
 }
 

@@ -758,8 +758,8 @@ const ShowFlowAgent = () => {
         </header>
         <main className="showflow-main">
           {speakerViewMode ? (
-            // Speaker View Mode - Large, simple display for speakers
-            <div className="showflow-speaker-view">
+            // Speaker View Mode - Large, simple display for speakers (16:9 layout)
+            <div className="showflow-speaker-view" style={{ position: 'relative' }}>
               {schedule.length === 0 ? (
                 <div className="showflow-speaker-empty">
                   <h1>No Schedule Loaded</h1>
@@ -770,7 +770,7 @@ const ShowFlowAgent = () => {
                 </div>
               ) : (
                 <>
-                  {/* Current Segment Display */}
+                  {/* Current Segment Display - Left Side (2/3 width) */}
                   {currentIdx !== null && schedule[currentIdx] ? (
                     <div className="showflow-speaker-current">
                       <div className="showflow-speaker-label">Current Segment</div>
@@ -779,8 +779,15 @@ const ShowFlowAgent = () => {
                       {schedule[currentIdx].presenter && (
                         <div className="showflow-speaker-presenter">Presenter: {schedule[currentIdx].presenter}</div>
                       )}
-                      <div className="showflow-speaker-timer">
-                        <span className="showflow-speaker-timer-icon">⏳</span>
+                      <div 
+                        className={`showflow-speaker-timer ${
+                          segmentTimer <= 10 ? 'critical' : 
+                          segmentTimer <= 30 ? 'warning' : ''
+                        }`}
+                      >
+                        <span className="showflow-speaker-timer-icon">
+                          {segmentTimer <= 10 ? '🚨' : segmentTimer <= 30 ? '⚠️' : '⏳'}
+                        </span>
                         <span className="showflow-speaker-timer-text">
                           {Math.floor(segmentTimer / 60)}:{(segmentTimer % 60).toString().padStart(2, '0')} remaining
                         </span>
@@ -802,7 +809,7 @@ const ShowFlowAgent = () => {
                     </div>
                   )}
 
-                  {/* Next Segment Display */}
+                  {/* Next Segment Display - Right Side (1/3 width) */}
                   {currentIdx !== null && currentIdx < schedule.length - 1 && schedule[currentIdx + 1] ? (
                     <div className="showflow-speaker-next">
                       <div className="showflow-speaker-label">Up Next</div>
@@ -820,7 +827,7 @@ const ShowFlowAgent = () => {
                     </div>
                   ) : null}
 
-                  {/* Quick Return Button */}
+                  {/* Quick Return Button - Positioned at bottom-right */}
                   <div className="showflow-speaker-controls">
                     <button className="showflow-btn large" onClick={toggleSpeakerView}>
                       ← Normal View

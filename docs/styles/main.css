@@ -704,18 +704,18 @@ body.dark, .showflow-root.dark {
   min-height: calc(100vh - 220px);
   background: linear-gradient(135deg, #232a5c 0%, #3c4e8a 100%);
   color: white;
-  padding: 2rem 8rem 4rem 4rem;
+  padding: 2rem 12rem 4rem 4rem;
   border-radius: 8px;
-  margin: 80px 20px 40px 20px;
+  margin: 80px 40px 40px 40px;
   text-align: center;
   box-shadow: 0 8px 32px rgba(35, 42, 92, 0.3);
   gap: 3rem;
-  width: calc(100vw - 120px);
+  width: calc(100vw - 200px);
   position: relative;
   left: 50%;
   right: 50%;
-  margin-left: calc(-50vw + 60px);
-  margin-right: calc(-50vw + 60px);
+  margin-left: calc(-50vw + 100px);
+  margin-right: calc(-50vw + 100px);
   overflow: visible;
 }
 
@@ -876,7 +876,7 @@ body.dark, .showflow-root.dark {
 .showflow-speaker-controls {
   position: absolute;
   bottom: 2rem;
-  right: 4rem;
+  right: 6rem;
   z-index: 10;
 }
 

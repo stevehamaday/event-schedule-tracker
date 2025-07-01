@@ -9,6 +9,7 @@ The Event Schedule Tracker is a web application designed to help users manage an
 - **Adjust Session Durations**: Users can modify the duration of sessions as needed.
 - **Countdown Timers**: Each upcoming session has a countdown timer to keep users informed of the time remaining.
 - **Notifications**: Users can receive push notifications or on-screen alerts 5 minutes before the next scheduled session.
+- **Speaker View**: Toggle to a distraction-free, large-text display showing only the current segment, time remaining, and next segment - perfect for speakers to see from a distance.
 
 ## Getting Started
 
@@ -49,6 +50,11 @@ This will generate optimized files for deployment in the `dist` directory.
 - Adjust session durations as necessary.
 - Monitor countdown timers for upcoming sessions.
 - Enable notifications to receive alerts before sessions start.
+- Toggle **Speaker View** for a clean, large-text display perfect for speakers:
+  - Click the "👁️ Speaker View" button in the footer, or press **F3**
+  - Shows current segment, time remaining, and next segment in large, easy-to-read text
+  - Features a gradient background using brand colors for professional appearance
+  - Toggle back to normal view anytime without losing progress
 
 ## Contributing
 Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.

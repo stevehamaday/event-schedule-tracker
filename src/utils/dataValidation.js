@@ -156,20 +156,31 @@ export const validateScheduleRow = (row, index) => {
     const timeValue = row.time.toString().trim();
     const durationValue = row.duration.toString().trim();
     
-    // Check for reasonable durations
-    const durationNum = parseInt(durationValue.replace(/[^0-9]/g, ''));
-    if (durationNum > 480) { // More than 8 hours
+    // Check for reasonable durations - improved parsing
+    let durationNum = 0;
+    
+    // First try direct integer parsing for simple cases
+    if (/^\d+$/.test(durationValue)) {
+      durationNum = parseInt(durationValue, 10);
+    } else {
+      // For more complex formats, extract just numbers
+      const numericOnly = durationValue.replace(/[^0-9]/g, '');
+      durationNum = parseInt(numericOnly, 10) || 0;
+    }
+    
+    // More reasonable threshold for duration warnings
+    if (durationNum > 480) { // More than 8 hours (480 minutes)
       warnings.push({
         field: 'duration',
-        message: 'Duration seems unusually long (more than 8 hours)',
+        message: `Duration seems unusually long (${durationNum} minutes = ${Math.round(durationNum/60*10)/10} hours)`,
         row: index
       });
     }
     
-    if (durationNum === 0) {
+    if (durationNum === 0 && durationValue !== '0') {
       warnings.push({
         field: 'duration',
-        message: 'Zero duration might cause scheduling issues',
+        message: 'Duration could not be parsed or is zero',
         row: index
       });
     }

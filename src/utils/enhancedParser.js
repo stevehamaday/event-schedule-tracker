@@ -36,7 +36,7 @@ const TIME_PATTERNS = [
   /^\d{1,2}:\d{2}\s*(AM|PM)$/i,           // 9:00 AM, 12:30 PM
   /^\d{1,2}:\d{2}$/,                      // 9:00, 12:30 (24hr)
   /^\d{1,2}\.\d{2}\s*(AM|PM)$/i,          // 9.00 AM
-  /^\d{1,2}:\d{2}:\d{2}$/,                // 9:00:00
+  /^\d{1,2}:\d{2}:\d{2}\s*(AM|PM)?$/i,    // 9:00:00 AM, 9:00:00
   /^\d{1,2}h\d{2}$/i,                     // 9h00
   /^\d{1,4}$/,                            // 900, 1200 (military time)
 ];
@@ -191,6 +191,32 @@ const parseTime = (timeStr) => {
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+      } else if (pattern === TIME_PATTERNS[3]) {
+        // HH:MM:SS format with optional AM/PM - strip seconds
+        const timeParts = cleaned.split(' ');
+        const timeOnly = timeParts[0]; // "9:00:00"
+        const modifier = timeParts[1]; // "AM" or "PM" if present
+        const [hours, minutes] = timeOnly.split(':').map(Number);
+        
+        if (modifier) {
+          // Already has AM/PM, just remove seconds and keep format
+          return `${hours}:${minutes.toString().padStart(2, '0')} ${modifier.toUpperCase()}`;
+        } else {
+          // Convert from 24-hour to 12-hour
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        }
+      } else if (pattern === TIME_PATTERNS[4]) {
+        // 9h00 format
+        const match = cleaned.match(/^(\d{1,2})h(\d{2})$/i);
+        if (match) {
+          const hours = parseInt(match[1]);
+          const minutes = parseInt(match[2]);
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        }
       } else if (pattern === TIME_PATTERNS[5]) {
         // Military time (0900, 1400)
         const timeNum = parseInt(cleaned);
@@ -234,7 +260,12 @@ const parseDuration = (durationStr) => {
   
   const str = durationStr.toString().trim();
   
-  // Try each duration pattern
+  // First, handle simple numeric values (most common case)
+  if (/^\d+$/.test(str)) {
+    return str; // Return as-is for simple numbers like "2", "11", "20"
+  }
+  
+  // Try each duration pattern for more complex formats
   for (const pattern of DURATION_PATTERNS) {
     const match = str.match(pattern);
     if (match) {
@@ -255,7 +286,7 @@ const parseDuration = (durationStr) => {
         const minutes = parseInt(match[2]) || 0;
         return (hours * 60 + minutes).toString();
       } else if (pattern === DURATION_PATTERNS[5]) {
-        // Plain number
+        // Plain number with potential decimal
         return match[1].split('.')[0]; // Remove decimals
       }
     }

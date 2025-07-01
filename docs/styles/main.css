@@ -704,12 +704,18 @@ body.dark, .showflow-root.dark {
   min-height: calc(100vh - 120px);
   background: linear-gradient(135deg, #232a5c 0%, #3c4e8a 100%);
   color: white;
-  padding: 2rem;
-  border-radius: 12px;
-  margin: 1rem 0;
+  padding: 2rem 4rem;
+  border-radius: 0;
+  margin: -64px -12px 0 -12px; /* Break out of main container constraints */
   text-align: center;
   box-shadow: 0 8px 32px rgba(35, 42, 92, 0.3);
-  gap: 2rem;
+  gap: 3rem;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
 }
 
 .showflow-speaker-empty {
@@ -884,8 +890,8 @@ body.dark, .showflow-root.dark {
 @media (max-width: 768px) {
   .showflow-speaker-view {
     flex-direction: column;
-    padding: 1rem;
-    margin: 0.5rem 0;
+    padding: 1rem 2rem;
+    margin: -64px -12px 0 -12px;
     min-height: calc(100vh - 140px);
     gap: 1rem;
   }

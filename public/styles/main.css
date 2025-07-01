@@ -300,21 +300,22 @@ body {
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
-  min-height: calc(100vh - 180px);
+  min-height: calc(100vh - 220px);
   background: linear-gradient(135deg, #232a5c 0%, #3c4e8a 100%);
   color: white;
-  padding: 2rem 3rem;
+  padding: 2rem 5rem 4rem 4rem;
   border-radius: 8px;
-  margin: 80px -12px 20px -12px; /* Top margin for header clearance, break out of side constraints */
+  margin: 80px 20px 40px 20px;
   text-align: center;
   box-shadow: 0 8px 32px rgba(35, 42, 92, 0.3);
   gap: 3rem;
-  width: calc(100vw - 40px);
+  width: calc(100vw - 80px);
   position: relative;
   left: 50%;
   right: 50%;
-  margin-left: calc(-50vw + 20px);
-  margin-right: calc(-50vw + 20px);
+  margin-left: calc(-50vw + 40px);
+  margin-right: calc(-50vw + 40px);
+  overflow: visible;
 }
 
 .showflow-speaker-empty {
@@ -474,7 +475,8 @@ body {
 .showflow-speaker-controls {
   position: absolute;
   bottom: 2rem;
-  right: 2rem;
+  right: 3rem;
+  z-index: 10;
 }
 
 .showflow-btn.large {
@@ -489,13 +491,13 @@ body {
 @media (max-width: 768px) {
   .showflow-speaker-view {
     flex-direction: column;
-    padding: 1.5rem 2rem;
-    margin: 80px -12px 20px -12px;
-    min-height: calc(100vh - 200px);
+    padding: 1.5rem 2rem 3rem 2rem;
+    margin: 80px 12px 40px 12px;
+    min-height: calc(100vh - 220px);
     gap: 1rem;
-    width: calc(100vw - 24px);
-    margin-left: calc(-50vw + 12px);
-    margin-right: calc(-50vw + 12px);
+    width: calc(100vw - 48px);
+    margin-left: calc(-50vw + 24px);
+    margin-right: calc(-50vw + 24px);
   }
 
   .showflow-speaker-current {

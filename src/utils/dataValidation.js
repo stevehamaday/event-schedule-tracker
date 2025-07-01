@@ -9,15 +9,18 @@ export const ValidationRules = {
       if (!value) return { valid: false, message: 'Time is required' };
       
       const timePatterns = [
-        /^\d{1,2}:\d{2}\s*(AM|PM)$/i,
-        /^\d{1,2}:\d{2}$/,
-        /^\d{1,2}\.\d{2}\s*(AM|PM)$/i,
+        /^\d{1,2}:\d{2}\s*(AM|PM)$/i,           // 9:00 AM, 12:30 PM
+        /^\d{1,2}:\d{2}$/,                      // 9:00, 12:30 (24hr)
+        /^\d{1,2}\.\d{2}\s*(AM|PM)$/i,          // 9.00 AM
+        /^\d{1,2}:\d{2}:\d{2}\s*(AM|PM)?$/i,    // 9:00:00 AM, 9:00:00
+        /^\d{1,2}h\d{2}$/i,                     // 9h00
+        /^\d{1,4}$/,                            // 900, 1200 (military time)
       ];
       
       const isValid = timePatterns.some(pattern => pattern.test(value.trim()));
       return {
         valid: isValid,
-        message: isValid ? '' : 'Invalid time format. Use formats like "9:00 AM" or "14:30"'
+        message: isValid ? '' : 'Invalid time format. Use formats like "9:00 AM", "9:00:00 AM", or "14:30"'
       };
     },
     suggest: (value) => {
@@ -45,15 +48,31 @@ export const ValidationRules = {
     validate: (value) => {
       if (!value) return { valid: true, message: '' }; // Duration is optional
       
+      const str = value.toString().trim();
+      
+      // Reject values that look like time formats (to prevent time/duration confusion)
+      if (/^\d{1,2}:\d{2}(?::\d{2})?\s*(AM|PM)?$/i.test(str)) {
+        return { valid: false, message: 'This appears to be a time value, not a duration. Please use duration formats like "30", "30 min", or "1:30"' };
+      }
+      
       const durationPatterns = [
         /^\d+$/,                    // Plain number
         /^\d+\s*min/i,             // 30 min
         /^\d+\s*m$/i,              // 30m
-        /^\d+:\d+$/,               // 1:30
+        /^\d+:\d+$/,               // 1:30 (hour:minute duration)
         /^\d+h\s*\d*m?$/i,         // 1h30m
       ];
       
-      const isValid = durationPatterns.some(pattern => pattern.test(value.trim()));
+      const isValid = durationPatterns.some(pattern => pattern.test(str));
+      
+      // Additional check for reasonable duration values
+      if (isValid) {
+        const numericValue = parseInt(str.match(/\d+/)[0]);
+        if (numericValue > 720) { // More than 12 hours seems unreasonable
+          return { valid: false, message: 'Duration seems too long (more than 12 hours). Please check the value.' };
+        }
+      }
+      
       return {
         valid: isValid,
         message: isValid ? '' : 'Invalid duration format. Use formats like "30", "30 min", or "1:30"'

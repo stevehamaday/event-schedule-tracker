@@ -176,30 +176,63 @@ const mapColumns = (headers) => {
 const parseTime = (timeStr) => {
   if (!timeStr) return null;
   
+  // Debug logging to understand what we're receiving
+  console.log('parseTime received:', {
+    value: timeStr,
+    type: typeof timeStr,
+    isDate: timeStr instanceof Date,
+    constructor: timeStr?.constructor?.name
+  });
+  
   // Handle Date objects (from Excel)
   if (timeStr instanceof Date) {
+    console.log('Processing Date object:', {
+      fullDate: timeStr.toString(),
+      hours: timeStr.getHours(),
+      minutes: timeStr.getMinutes(),
+      year: timeStr.getFullYear(),
+      month: timeStr.getMonth(),
+      date: timeStr.getDate()
+    });
+    
     const hours = timeStr.getHours();
     const minutes = timeStr.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    console.log('Date object converted to:', result);
+    return result;
   }
   
   // Handle Excel serial numbers (fraction of day)
-  if (typeof timeStr === 'number' && timeStr > 0 && timeStr < 1) {
-    const totalMinutes = Math.round(timeStr * 24 * 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    if (hours < 24) {
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12;
-      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  if (typeof timeStr === 'number') {
+    console.log('Processing number:', {
+      value: timeStr,
+      isFraction: timeStr > 0 && timeStr < 1,
+      totalMinutesCalc: Math.round(timeStr * 24 * 60)
+    });
+    
+    if (timeStr > 0 && timeStr < 1) {
+      const totalMinutes = Math.round(timeStr * 24 * 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours < 24) {
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        console.log('Number converted to:', result);
+        return result;
+      }
     }
   }
   
-  if (typeof timeStr !== 'string') return null;
+  if (typeof timeStr !== 'string') {
+    console.log('Unhandled type, returning null');
+    return null;
+  }
   
   const cleaned = timeStr.trim();
+  console.log('Processing string:', cleaned);
   
   // Try each time pattern
   for (const pattern of TIME_PATTERNS) {
@@ -469,12 +502,39 @@ export const parseScheduleFile = (file, options = {}) => {
           // Get raw data with date conversion
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
           
+          console.log('Raw Excel data before processing:', {
+            totalRows: jsonData.length,
+            firstFewRows: jsonData.slice(0, 5),
+            sampleCellTypes: jsonData[1]?.map(cell => ({
+              value: cell,
+              type: typeof cell,
+              isDate: cell instanceof Date,
+              constructor: cell?.constructor?.name
+            }))
+          });
+          
           // Also get the raw worksheet data to check for time formats
           const range = XLSX.utils.decode_range(worksheet['!ref']);
           const processedJsonData = jsonData.map((row, rowIndex) => {
+            console.log(`Processing Excel row ${rowIndex}:`, row);
             return row.map((cell, colIndex) => {
+              console.log(`  Cell [${rowIndex}][${colIndex}]:`, {
+                originalValue: cell,
+                type: typeof cell,
+                isDate: cell instanceof Date
+              });
+              
               // Handle Excel date/time objects
               if (cell instanceof Date) {
+                console.log(`    Date processing:`, {
+                  fullDate: cell.toString(),
+                  year: cell.getFullYear(),
+                  month: cell.getMonth(),
+                  date: cell.getDate(),
+                  hours: cell.getHours(),
+                  minutes: cell.getMinutes()
+                });
+                
                 // Check if this looks like a time (hours < 24 and year is 1900)
                 if (cell.getFullYear() === 1900 && cell.getMonth() === 0 && cell.getDate() === 1) {
                   // This is likely a time value
@@ -482,19 +542,24 @@ export const parseScheduleFile = (file, options = {}) => {
                   const minutes = cell.getMinutes();
                   const ampm = hours >= 12 ? 'PM' : 'AM';
                   const displayHours = hours % 12 || 12;
-                  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  console.log(`    Time-only date converted to: ${result}`);
+                  return result;
                 } else {
                   // This is likely a full date/time - extract time part
                   const hours = cell.getHours();
                   const minutes = cell.getMinutes();
                   const ampm = hours >= 12 ? 'PM' : 'AM';
                   const displayHours = hours % 12 || 12;
-                  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  console.log(`    Full date converted to: ${result}`);
+                  return result;
                 }
               }
               
               // Handle Excel serial numbers that might be times
               if (typeof cell === 'number' && cell > 0 && cell < 1) {
+                console.log(`    Processing fraction: ${cell}`);
                 // This could be a time represented as fraction of a day
                 const totalMinutes = Math.round(cell * 24 * 60);
                 const hours = Math.floor(totalMinutes / 60);
@@ -502,10 +567,13 @@ export const parseScheduleFile = (file, options = {}) => {
                 if (hours < 24) {
                   const ampm = hours >= 12 ? 'PM' : 'AM';
                   const displayHours = hours % 12 || 12;
-                  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  console.log(`    Fraction converted to: ${result}`);
+                  return result;
                 }
               }
               
+              console.log(`    Returning unchanged: ${cell}`);
               return cell;
             });
           });

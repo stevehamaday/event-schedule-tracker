@@ -704,19 +704,17 @@ body.dark, .showflow-root.dark {
   min-height: calc(100vh - 220px);
   background: linear-gradient(135deg, #232a5c 0%, #3c4e8a 100%);
   color: white;
-  padding: 2rem 12rem 4rem 4rem;
+  padding: 2rem;
   border-radius: 8px;
-  margin: 80px 40px 40px 40px;
+  margin: 80px auto 40px auto;
   text-align: center;
   box-shadow: 0 8px 32px rgba(35, 42, 92, 0.3);
   gap: 3rem;
-  width: calc(100vw - 200px);
+  max-width: 85vw;
+  width: 85vw;
   position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: calc(-50vw + 100px);
-  margin-right: calc(-50vw + 100px);
   overflow: visible;
+  box-sizing: border-box;
 }
 
 .showflow-speaker-empty {
@@ -876,8 +874,12 @@ body.dark, .showflow-root.dark {
 .showflow-speaker-controls {
   position: absolute;
   bottom: 2rem;
-  right: 6rem;
+  right: 2rem;
   z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .showflow-btn.large {
@@ -892,13 +894,12 @@ body.dark, .showflow-root.dark {
 @media (max-width: 768px) {
   .showflow-speaker-view {
     flex-direction: column;
-    padding: 1.5rem 2rem;
-    margin: 80px -12px 20px -12px;
+    padding: 1.5rem;
+    margin: 80px auto 40px auto;
     min-height: calc(100vh - 200px);
     gap: 1rem;
-    width: calc(100vw - 24px);
-    margin-left: calc(-50vw + 12px);
-    margin-right: calc(-50vw + 12px);
+    max-width: 95vw;
+    width: 95vw;
   }
 
   .showflow-speaker-current {
@@ -945,6 +946,25 @@ body.dark, .showflow-root.dark {
   .showflow-speaker-controls {
     position: static;
     margin-top: 2rem;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+}
+
+/* Large screen optimization */
+@media (min-width: 1400px) {
+  .showflow-speaker-view {
+    max-width: 80vw;
+    width: 80vw;
+  }
+}
+
+/* Ultra-wide screen optimization */
+@media (min-width: 1920px) {
+  .showflow-speaker-view {
+    max-width: 75vw;
+    width: 75vw;
   }
 }
 

@@ -300,21 +300,21 @@ body {
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 180px);
   background: linear-gradient(135deg, #232a5c 0%, #3c4e8a 100%);
   color: white;
-  padding: 2rem 4rem;
-  border-radius: 0;
-  margin: -64px -12px 0 -12px; /* Break out of main container constraints */
+  padding: 2rem 3rem;
+  border-radius: 8px;
+  margin: 80px -12px 20px -12px; /* Top margin for header clearance, break out of side constraints */
   text-align: center;
   box-shadow: 0 8px 32px rgba(35, 42, 92, 0.3);
   gap: 3rem;
-  width: 100vw;
+  width: calc(100vw - 40px);
   position: relative;
   left: 50%;
   right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
+  margin-left: calc(-50vw + 20px);
+  margin-right: calc(-50vw + 20px);
 }
 
 .showflow-speaker-empty {
@@ -489,10 +489,13 @@ body {
 @media (max-width: 768px) {
   .showflow-speaker-view {
     flex-direction: column;
-    padding: 1rem 2rem;
-    margin: -64px -12px 0 -12px;
-    min-height: calc(100vh - 140px);
+    padding: 1.5rem 2rem;
+    margin: 80px -12px 20px -12px;
+    min-height: calc(100vh - 200px);
     gap: 1rem;
+    width: calc(100vw - 24px);
+    margin-left: calc(-50vw + 12px);
+    margin-right: calc(-50vw + 12px);
   }
 
   .showflow-speaker-current {

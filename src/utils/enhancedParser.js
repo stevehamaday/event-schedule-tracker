@@ -171,10 +171,33 @@ const mapColumns = (headers) => {
 };
 
 /**
- * Detect and parse time formats
+ * Detect and parse time formats (enhanced for Excel compatibility)
  */
 const parseTime = (timeStr) => {
-  if (!timeStr || typeof timeStr !== 'string') return null;
+  if (!timeStr) return null;
+  
+  // Handle Date objects (from Excel)
+  if (timeStr instanceof Date) {
+    const hours = timeStr.getHours();
+    const minutes = timeStr.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  }
+  
+  // Handle Excel serial numbers (fraction of day)
+  if (typeof timeStr === 'number' && timeStr > 0 && timeStr < 1) {
+    const totalMinutes = Math.round(timeStr * 24 * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours < 24) {
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    }
+  }
+  
+  if (typeof timeStr !== 'string') return null;
   
   const cleaned = timeStr.trim();
   
@@ -253,10 +276,20 @@ const parseTime = (timeStr) => {
 };
 
 /**
- * Parse duration from various formats
+ * Parse duration from various formats (enhanced for Excel compatibility)
  */
 const parseDuration = (durationStr) => {
   if (!durationStr) return '';
+  
+  // Handle Excel numbers (duration in minutes)
+  if (typeof durationStr === 'number') {
+    const num = Math.round(durationStr);
+    // Sanity check: duration should be reasonable (0-720 minutes = 12 hours max)
+    if (num >= 0 && num <= 720) {
+      return num.toString();
+    }
+    return '';
+  }
   
   const str = durationStr.toString().trim();
   
@@ -423,7 +456,7 @@ export const parseScheduleFile = (file, options = {}) => {
           rawData = allRows.slice(headerRowIndex + 1);
           
         } else {
-          // Enhanced XLSX parsing
+          // Enhanced XLSX parsing with better date/time handling
           const workbook = XLSX.read(data, { cellDates: true, cellText: false });
           const sheetName = workbook.SheetNames[0];
           
@@ -432,16 +465,61 @@ export const parseScheduleFile = (file, options = {}) => {
           }
           
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
           
-          if (jsonData.length === 0) {
+          // Get raw data with date conversion
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+          
+          // Also get the raw worksheet data to check for time formats
+          const range = XLSX.utils.decode_range(worksheet['!ref']);
+          const processedJsonData = jsonData.map((row, rowIndex) => {
+            return row.map((cell, colIndex) => {
+              // Handle Excel date/time objects
+              if (cell instanceof Date) {
+                // Check if this looks like a time (hours < 24 and year is 1900)
+                if (cell.getFullYear() === 1900 && cell.getMonth() === 0 && cell.getDate() === 1) {
+                  // This is likely a time value
+                  const hours = cell.getHours();
+                  const minutes = cell.getMinutes();
+                  const ampm = hours >= 12 ? 'PM' : 'AM';
+                  const displayHours = hours % 12 || 12;
+                  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                } else {
+                  // This is likely a full date/time - extract time part
+                  const hours = cell.getHours();
+                  const minutes = cell.getMinutes();
+                  const ampm = hours >= 12 ? 'PM' : 'AM';
+                  const displayHours = hours % 12 || 12;
+                  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                }
+              }
+              
+              // Handle Excel serial numbers that might be times
+              if (typeof cell === 'number' && cell > 0 && cell < 1) {
+                // This could be a time represented as fraction of a day
+                const totalMinutes = Math.round(cell * 24 * 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                if (hours < 24) {
+                  const ampm = hours >= 12 ? 'PM' : 'AM';
+                  const displayHours = hours % 12 || 12;
+                  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                }
+              }
+              
+              return cell;
+            });
+          });
+          
+          const jsonDataToUse = processedJsonData;
+          
+          if (jsonDataToUse.length === 0) {
             return reject(new Error("Empty worksheet"));
           }
           
           // Find header row
           let headerRowIndex = 0;
-          for (let i = 0; i < Math.min(jsonData.length, 3); i++) {
-            const row = jsonData[i];
+          for (let i = 0; i < Math.min(jsonDataToUse.length, 3); i++) {
+            const row = jsonDataToUse[i];
             const hasText = row.some(cell => cell && typeof cell === 'string' && /[a-zA-Z]/.test(cell));
             if (hasText) {
               headerRowIndex = i;
@@ -449,8 +527,8 @@ export const parseScheduleFile = (file, options = {}) => {
             }
           }
           
-          headers = jsonData[headerRowIndex];
-          rawData = jsonData.slice(headerRowIndex + 1);
+          headers = jsonDataToUse[headerRowIndex];
+          rawData = jsonDataToUse.slice(headerRowIndex + 1);
         }
 
         // Map columns intelligently

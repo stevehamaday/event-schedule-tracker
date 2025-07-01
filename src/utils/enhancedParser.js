@@ -604,7 +604,22 @@ export const parseScheduleFile = (file, options = {}) => {
                   const ampm = hours >= 12 ? 'PM' : 'AM';
                   const displayHours = hours % 12 || 12;
                   const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-                  console.log(`    Raw fraction converted to: ${result}`);
+                  console.log(`    Raw time fraction ${rawCell} converted to: ${result}`);
+                  return result;
+                }
+              }
+              
+              // Special handling for Excel "time" cells that show as problematic date strings
+              if (typeof cell === 'string' && /^1\/0\/\d{2}$/.test(cell) && typeof rawCell === 'number') {
+                console.log(`    Converting problematic Excel time format: formatted="${cell}", raw=${rawCell}`);
+                if (rawCell > 0 && rawCell < 1) {
+                  const totalMinutes = Math.round(rawCell * 24 * 60);
+                  const hours = Math.floor(totalMinutes / 60);
+                  const minutes = totalMinutes % 60;
+                  const ampm = hours >= 12 ? 'PM' : 'AM';
+                  const displayHours = hours % 12 || 12;
+                  const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  console.log(`    Converted to: ${result}`);
                   return result;
                 }
               }

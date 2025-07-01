@@ -234,22 +234,87 @@ const parseTime = (timeStr) => {
   const cleaned = timeStr.trim();
   console.log('Processing string:', cleaned);
   
+  if (typeof timeStr !== 'string') {
+    console.log('Unhandled type, returning null');
+    return null;
+  }
+  
+  const cleanedStr = timeStr.trim();
+  console.log('Processing string:', cleanedStr);
+  
+  // Handle Excel time format like "1/0/00" (which represents time on Excel's epoch date)
+  if (/^1\/0\/\d{2}$/.test(cleanedStr)) {
+    console.log('Detected Excel time format 1/0/XX, treating as time-only value');
+    // This is Excel's way of representing time - the last part might be minutes or a time indicator
+    // For now, since all your times appear to be the same in the debug, let's try to extract from the original Excel data
+    // This suggests the XLSX parsing isn't preserving the actual time values properly
+    return null; // Let it fall through to default parsing
+  }
+  
+  // Handle Excel date format like "1/0/00" - this might be a time representation
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(cleanedStr)) {
+    console.log('Detected Excel date-like format:', cleanedStr);
+    
+    // Try parsing as Excel serial date
+    try {
+      const dateParts = cleanedStr.split('/');
+      let month = parseInt(dateParts[0]);
+      let day = parseInt(dateParts[1]); 
+      let year = parseInt(dateParts[2]);
+      
+      console.log('Date parts:', { month, day, year });
+      
+      // If this looks like "1/0/00", it might be hours/minutes/seconds
+      // or it could be an Excel time serial representation
+      if (month <= 24 && day <= 59 && year <= 59) {
+        // Treat as hour/minute/second or hour/minute/00
+        const hours = month;
+        const minutes = day;
+        
+        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+          console.log('Interpreted as time H:M format:', result);
+          return result;
+        }
+      }
+      
+      // Fallback: try as actual date
+      const fullYear = year < 50 ? 2000 + year : (year < 100 ? 1900 + year : year);
+      const dateObj = new Date(fullYear, month - 1, day);
+      console.log('Parsed as date:', dateObj.toString());
+      
+      const hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+      console.log('Date converted to time:', result);
+      return result;
+      
+    } catch (error) {
+      console.log('Error parsing Excel date format:', error);
+    }
+  }
+  
+  // Continue with existing time pattern matching using the cleaned string
   // Try each time pattern
   for (const pattern of TIME_PATTERNS) {
-    if (pattern.test(cleaned)) {
+    if (pattern.test(cleanedStr)) {
       // Handle different formats
       if (pattern === TIME_PATTERNS[0] || pattern === TIME_PATTERNS[2]) {
         // Already in good format (9:00 AM, 9.00 AM)
-        return cleaned.replace('.', ':');
+        return cleanedStr.replace('.', ':');
       } else if (pattern === TIME_PATTERNS[1]) {
         // 24-hour format - convert to 12-hour
-        const [hours, minutes] = cleaned.split(':').map(Number);
+        const [hours, minutes] = cleanedStr.split(':').map(Number);
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
       } else if (pattern === TIME_PATTERNS[3]) {
         // HH:MM:SS format with optional AM/PM - strip seconds
-        const timeParts = cleaned.split(' ');
+        const timeParts = cleanedStr.split(' ');
         const timeOnly = timeParts[0]; // "9:00:00"
         const modifier = timeParts[1]; // "AM" or "PM" if present
         const [hours, minutes] = timeOnly.split(':').map(Number);
@@ -265,7 +330,7 @@ const parseTime = (timeStr) => {
         }
       } else if (pattern === TIME_PATTERNS[4]) {
         // 9h00 format
-        const match = cleaned.match(/^(\d{1,2})h(\d{2})$/i);
+        const match = cleanedStr.match(/^(\d{1,2})h(\d{2})$/i);
         if (match) {
           const hours = parseInt(match[1]);
           const minutes = parseInt(match[2]);
@@ -275,7 +340,7 @@ const parseTime = (timeStr) => {
         }
       } else if (pattern === TIME_PATTERNS[5]) {
         // Military time (0900, 1400)
-        const timeNum = parseInt(cleaned);
+        const timeNum = parseInt(cleanedStr);
         const hours = Math.floor(timeNum / 100);
         const minutes = timeNum % 100;
         const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -286,7 +351,7 @@ const parseTime = (timeStr) => {
   }
   
   // If no pattern matches, try to extract numbers and make a reasonable guess
-  const numbers = cleaned.match(/\d+/g);
+  const numbers = cleanedStr.match(/\d+/g);
   if (numbers && numbers.length >= 1) {
     let hours = parseInt(numbers[0]);
     let minutes = numbers.length > 1 ? parseInt(numbers[1]) : 0;
@@ -305,7 +370,7 @@ const parseTime = (timeStr) => {
     }
   }
   
-  return cleaned; // Return as-is if we can't parse it
+  return cleanedStr; // Return as-is if we can't parse it
 };
 
 /**
@@ -499,30 +564,50 @@ export const parseScheduleFile = (file, options = {}) => {
           
           const worksheet = workbook.Sheets[sheetName];
           
-          // Get raw data with date conversion
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+          // Get raw data with date conversion AND raw numeric values
+          const jsonDataFormatted = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+          const jsonDataRaw = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: true });
           
-          console.log('Raw Excel data before processing:', {
-            totalRows: jsonData.length,
-            firstFewRows: jsonData.slice(0, 5),
-            sampleCellTypes: jsonData[1]?.map(cell => ({
-              value: cell,
-              type: typeof cell,
-              isDate: cell instanceof Date,
-              constructor: cell?.constructor?.name
-            }))
+          console.log('Raw Excel data before processing (formatted):', {
+            totalRows: jsonDataFormatted.length,
+            firstFewRows: jsonDataFormatted.slice(0, 5),
           });
           
-          // Also get the raw worksheet data to check for time formats
-          const range = XLSX.utils.decode_range(worksheet['!ref']);
-          const processedJsonData = jsonData.map((row, rowIndex) => {
-            console.log(`Processing Excel row ${rowIndex}:`, row);
+          console.log('Raw Excel data before processing (raw):', {
+            totalRows: jsonDataRaw.length,
+            firstFewRows: jsonDataRaw.slice(0, 5),
+          });
+          
+          // Process data using both raw and formatted versions
+          const processedJsonData = jsonDataFormatted.map((row, rowIndex) => {
+            const rawRow = jsonDataRaw[rowIndex] || [];
+            console.log(`Processing Excel row ${rowIndex}:`, { formatted: row, raw: rawRow });
+            
             return row.map((cell, colIndex) => {
+              const rawCell = rawRow[colIndex];
               console.log(`  Cell [${rowIndex}][${colIndex}]:`, {
-                originalValue: cell,
-                type: typeof cell,
-                isDate: cell instanceof Date
+                formattedValue: cell,
+                rawValue: rawCell,
+                formattedType: typeof cell,
+                rawType: typeof rawCell,
+                isDate: cell instanceof Date,
+                rawIsNumber: typeof rawCell === 'number'
               });
+              
+              // If we have a raw numeric value that could be a time (fraction of day)
+              if (typeof rawCell === 'number' && rawCell > 0 && rawCell < 1) {
+                console.log(`    Processing raw time fraction: ${rawCell}`);
+                const totalMinutes = Math.round(rawCell * 24 * 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                if (hours < 24) {
+                  const ampm = hours >= 12 ? 'PM' : 'AM';
+                  const displayHours = hours % 12 || 12;
+                  const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                  console.log(`    Raw fraction converted to: ${result}`);
+                  return result;
+                }
+              }
               
               // Handle Excel date/time objects
               if (cell instanceof Date) {
@@ -559,7 +644,7 @@ export const parseScheduleFile = (file, options = {}) => {
               
               // Handle Excel serial numbers that might be times
               if (typeof cell === 'number' && cell > 0 && cell < 1) {
-                console.log(`    Processing fraction: ${cell}`);
+                console.log(`    Processing formatted fraction: ${cell}`);
                 // This could be a time represented as fraction of a day
                 const totalMinutes = Math.round(cell * 24 * 60);
                 const hours = Math.floor(totalMinutes / 60);
@@ -568,7 +653,7 @@ export const parseScheduleFile = (file, options = {}) => {
                   const ampm = hours >= 12 ? 'PM' : 'AM';
                   const displayHours = hours % 12 || 12;
                   const result = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-                  console.log(`    Fraction converted to: ${result}`);
+                  console.log(`    Formatted fraction converted to: ${result}`);
                   return result;
                 }
               }

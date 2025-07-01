@@ -12,8 +12,8 @@ const COLUMN_PATTERNS = {
     'starttime', 'start_time', 'time_start', 'session_time', 'event_time'
   ],
   duration: [
-    'duration', 'length', 'minutes', 'mins', 'time', 'runtime', 'period',
-    'how_long', 'session_length', 'event_duration', 'mins', 'min'
+    'duration', 'length', 'minutes', 'mins', 'runtime', 'period',
+    'how_long', 'session_length', 'event_duration', 'min'
   ],
   segment: [
     'segment', 'session', 'topic', 'title', 'subject', 'activity', 'event',
@@ -260,9 +260,21 @@ const parseDuration = (durationStr) => {
   
   const str = durationStr.toString().trim();
   
+  // Reject values that look like time formats (to prevent time/duration confusion)
+  if (/^\d{1,2}:\d{2}(?::\d{2})?\s*(AM|PM)?$/i.test(str)) {
+    // console.warn(`Rejecting time-like value for duration: "${str}"`);
+    return ''; // Don't parse time values as durations
+  }
+  
   // First, handle simple numeric values (most common case)
   if (/^\d+$/.test(str)) {
-    return str; // Return as-is for simple numbers like "2", "11", "20"
+    const num = parseInt(str, 10);
+    // Sanity check: duration should be reasonable (0-720 minutes = 12 hours max)
+    if (num >= 0 && num <= 720) {
+      return str; // Return as-is for simple numbers like "2", "11", "20"
+    }
+    // console.warn(`Rejecting unreasonable numeric duration: "${str}" (${num} minutes)`);
+    return '';
   }
   
   // Try each duration pattern for more complex formats
@@ -274,27 +286,50 @@ const parseDuration = (durationStr) => {
         return match[1];
       } else if (pattern === DURATION_PATTERNS[2]) {
         // 1 hr
-        return (parseInt(match[1]) * 60).toString();
+        const hours = parseInt(match[1]) || 0;
+        if (hours <= 12) { // Reasonable limit
+          return (hours * 60).toString();
+        }
+        return '';
       } else if (pattern === DURATION_PATTERNS[3]) {
         // 1h30m
         const hours = parseInt(match[1]) || 0;
         const minutes = parseInt(match[2]) || 0;
-        return (hours * 60 + minutes).toString();
+        if (hours <= 12 && minutes < 60) { // Reasonable limits
+          return (hours * 60 + minutes).toString();
+        }
+        return '';
       } else if (pattern === DURATION_PATTERNS[4]) {
-        // 1:30 (hour:minute)
+        // 1:30 (hour:minute) - be very careful here as this can match times
         const hours = parseInt(match[1]) || 0;
         const minutes = parseInt(match[2]) || 0;
-        return (hours * 60 + minutes).toString();
+        // Only accept if it's clearly a duration (small hours value, no AM/PM context)
+        if (hours >= 0 && hours <= 4 && minutes >= 0 && minutes < 60) {
+          return (hours * 60 + minutes).toString();
+        }
+        // console.warn(`Rejecting time-like pattern for duration: "${str}"`);
+        return ''; // Reject suspicious values that look like times
       } else if (pattern === DURATION_PATTERNS[5]) {
-        // Plain number with potential decimal
-        return match[1].split('.')[0]; // Remove decimals
+        // Plain number with potential decimal - already handled above
+        const num = parseFloat(match[1]);
+        if (num >= 0 && num <= 720) {
+          return Math.floor(num).toString(); // Remove decimals
+        }
+        return '';
       }
     }
   }
   
-  // Fallback: extract any numbers
-  const numbers = str.match(/\d+/);
-  return numbers ? numbers[0] : '';
+  // Fallback: be very conservative
+  const numbers = str.match(/^\d+$/);
+  if (numbers) {
+    const num = parseInt(numbers[0], 10);
+    if (num >= 0 && num <= 720) {
+      return numbers[0];
+    }
+  }
+  
+  return '';
 };
 
 /**
@@ -424,7 +459,7 @@ export const parseScheduleFile = (file, options = {}) => {
         // Process data with enhanced parsing
         const processedData = rawData
           .filter(row => row.some(cell => cell && cell.toString().trim())) // Remove empty rows
-          .map(row => {
+          .map((row, rowIndex) => {
             const processedRow = {};
             
             // Map each field type
@@ -433,13 +468,22 @@ export const parseScheduleFile = (file, options = {}) => {
               let value = '';
               
               if (mapping && row[mapping.index] !== undefined) {
-                value = row[mapping.index].toString().trim();
+                const rawValue = row[mapping.index].toString().trim();
                 
-                // Apply field-specific processing
+                // Apply field-specific processing with strict validation
                 if (fieldType === 'time') {
-                  value = parseTime(value) || value;
+                  value = parseTime(rawValue) || rawValue;
                 } else if (fieldType === 'duration') {
-                  value = parseDuration(value) || value;
+                  // Double-check that we're not processing time values as duration
+                  if (!/^\d{1,2}:\d{2}(?::\d{2})?\s*(AM|PM)?$/i.test(rawValue)) {
+                    value = parseDuration(rawValue) || rawValue;
+                  } else {
+                    // If a time-like value ended up in duration column, keep it empty
+                    value = '';
+                    console.warn(`Skipping time-like value "${rawValue}" in duration column for row ${rowIndex + 1}`);
+                  }
+                } else {
+                  value = rawValue;
                 }
               }
               
@@ -550,7 +594,7 @@ export const parseClipboardData = (textData) => {
   
   const processedData = dataRows
     .filter(row => row.some(cell => cell && cell.toString().trim()))
-    .map(row => {
+    .map((row, rowIndex) => {
       const processedRow = {};
       
       Object.keys(COLUMN_PATTERNS).forEach(fieldType => {
@@ -558,12 +602,21 @@ export const parseClipboardData = (textData) => {
         let value = '';
         
         if (mapping && row[mapping.index] !== undefined) {
-          value = row[mapping.index].toString().trim();
+          const rawValue = row[mapping.index].toString().trim();
           
           if (fieldType === 'time') {
-            value = parseTime(value) || value;
+            value = parseTime(rawValue) || rawValue;
           } else if (fieldType === 'duration') {
-            value = parseDuration(value) || value;
+            // Double-check that we're not processing time values as duration
+            if (!/^\d{1,2}:\d{2}(?::\d{2})?\s*(AM|PM)?$/i.test(rawValue)) {
+              value = parseDuration(rawValue) || rawValue;
+            } else {
+              // If a time-like value ended up in duration column, keep it empty
+              value = '';
+              console.warn(`Skipping time-like value "${rawValue}" in duration column for row ${rowIndex + 1}`);
+            }
+          } else {
+            value = rawValue;
           }
         }
         

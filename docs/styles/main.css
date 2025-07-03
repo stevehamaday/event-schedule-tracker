@@ -1046,6 +1046,30 @@ body.dark .showflow-table tr:hover:not(.dragged) {
   background: #3c3d43 !important;
 }
 
+body.dark tr.current-segment {
+  background: #4a9eff !important;
+  color: #ffffff !important;
+}
+
+body.dark tr.current-segment td, 
+body.dark tr.current-segment input, 
+body.dark tr.current-segment button {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+body.dark tr.next-segment {
+  background: #404248 !important;
+  color: #e6e6e6 !important;
+}
+
+body.dark tr.next-segment td, 
+body.dark tr.next-segment input, 
+body.dark tr.next-segment button {
+  color: #e6e6e6 !important;
+  background: transparent !important;
+}
+
 .showflow-current-sticky {
   position: sticky;
   top: 0;

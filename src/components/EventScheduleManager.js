@@ -830,7 +830,7 @@ const ShowFlowAgent = () => {
             </div>
         )}
 
-        <main className="showflow-main" style={{ display: presenterViewMode ? 'none' : 'flex' }}>
+        <main className="showflow-main" style={{ display: presenterViewMode ? 'none' : 'block' }}>
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
             <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#232a5c' } : {}}>
@@ -1235,7 +1235,9 @@ const ShowFlowAgent = () => {
           )}
         </main>
         {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}
-        {isMobileDevice ? (
+        {!presenterViewMode && (
+          <>
+            {isMobileDevice ? (
           <footer className="showflow-footer-controls" style={{
             position: 'fixed',
             bottom: 0,
@@ -1465,6 +1467,8 @@ const ShowFlowAgent = () => {
           onAccept={handleAcceptPreview}
           onReject={handleRejectPreview}
         />
+          </>
+        )}
       </div>
     </MobileErrorBoundary>
   );

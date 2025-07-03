@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './PresenterView.css'; // Import presenter view styles
 import { parseExcelFile } from '../utils/excelParser'; // This path must be correct
 import { parseScheduleFile, parseClipboardData } from '../utils/enhancedParser';
 import DataPreviewModal from './DataPreviewModal';
@@ -756,10 +757,10 @@ const ShowFlowAgent = () => {
             />
           </div>
         </header>
-        <main className="showflow-main">
-          {presenterViewMode ? (
-            // Presenter View Mode - Large, simple display for presenters (16:9 layout)
-            <div className="showflow-presenter-view fullscreen" style={{ position: 'relative' }}>
+
+        {/* Conditional rendering for Presenter View - outside of main content flow */}
+        {presenterViewMode && (
+            <div className="showflow-presenter-view fullscreen">
               {schedule.length === 0 ? (
                 <div className="showflow-presenter-empty">
                   <h1>No Schedule Loaded</h1>
@@ -770,7 +771,7 @@ const ShowFlowAgent = () => {
                 </div>
               ) : (
                 <>
-                  {/* Current Segment Display - Left Side (2/3 width) */}
+                  {/* Current Segment Display */}
                   {currentIdx !== null && schedule[currentIdx] ? (
                     <div className="showflow-presenter-current">
                       <div className="showflow-presenter-label">Current Segment</div>
@@ -803,7 +804,7 @@ const ShowFlowAgent = () => {
                       <div className="showflow-presenter-time">Waiting for schedule to start...</div>
                     </div>
                   )}
-                  {/* Next Segment Display - Right Side (1/3 width) */}
+                  {/* Next Segment Display */}
                   {currentIdx !== null && schedule[currentIdx + 1] ? (
                     <div className="showflow-presenter-next">
                       <div className="showflow-presenter-label">Next Up</div>
@@ -818,7 +819,7 @@ const ShowFlowAgent = () => {
                     </div>
                   ) : null}
 
-                  {/* Quick Return Button - Positioned at bottom-right */}
+                  {/* Quick Return Button */}
                   <div className="showflow-presenter-controls">
                     <button className="showflow-btn large" onClick={togglePresenterView}>
                       ← Normal View
@@ -827,9 +828,9 @@ const ShowFlowAgent = () => {
                 </>
               )}
             </div>
-          ) : (
-            // Normal View Mode - All the existing content
-            <>
+        )}
+
+        <main className="showflow-main" style={{ display: presenterViewMode ? 'none' : 'flex' }}>
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
             <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#232a5c' } : {}}>
@@ -1026,11 +1027,7 @@ const ShowFlowAgent = () => {
                                 <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
                               </td>                              {/* Add segment after */}
                               <td>
-                                <button 
-                                  className={`showflow-btn ${schedule.length <= 2 ? 'primary' : ''}`}
-                                  title="Add segment after" 
-                                  onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }}
-                                  style={{
+                                <button className={`showflow-btn ${schedule.length <= 2 ? 'primary' : ''}`} title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} style={{
                                     ...(schedule.length === 1 && i === 0 ? {
                                       background: '#22c55e',
                                       color: 'white',
@@ -1235,8 +1232,6 @@ const ShowFlowAgent = () => {
             <div style={{textAlign:'right',margin:'16px 0'}}>
               <button className="showflow-btn" onClick={() => setShowDebug(true)}>Show Debug/Settings</button>
             </div>
-          )}
-          </>
           )}
         </main>
         {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}

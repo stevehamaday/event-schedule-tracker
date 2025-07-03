@@ -10,13 +10,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   z-index: 1000;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  padding: 2vh 2vw;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .showflow-presenter-view.fullscreen {
-  padding: 2vw;
+  padding: 2vh 2vw;
 }
 
 .showflow-presenter-empty {
@@ -29,43 +32,45 @@
 }
 
 .showflow-presenter-current {
-  flex-grow: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
   width: 100%;
+  max-height: 60vh;
+  margin-bottom: 2vh;
 }
 
 .showflow-presenter-label {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   text-transform: uppercase;
   color: #888;
   margin-bottom: 0.5rem;
 }
 
 .showflow-presenter-title {
-  font-size: 5rem;
+  font-size: 4rem;
   font-weight: bold;
   line-height: 1.1;
   margin-bottom: 1rem;
 }
 
 .showflow-presenter-time {
-  font-size: 2.5rem;
+  font-size: 2rem;
   color: #ccc;
   margin-bottom: 1rem;
 }
 
 .showflow-presenter-presenter {
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: #ccc;
 }
 
 .showflow-presenter-timer {
-  font-size: 4rem;
+  font-size: 3rem;
   font-weight: bold;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .showflow-presenter-timer.critical {
@@ -78,30 +83,33 @@
 
 .showflow-presenter-overrun {
   color: #ff4d4d;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: bold;
 }
 
 .showflow-presenter-next {
   width: 100%;
   text-align: center;
-  padding-top: 2rem;
+  padding: 1.5rem 0;
   border-top: 1px solid #444;
-  margin-top: 2rem;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .showflow-presenter-next-title {
-  font-size: 3rem;
+  font-size: 2rem;
   font-weight: bold;
+  margin-bottom: 0.5rem;
 }
 
 .showflow-presenter-next-time {
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: #ccc;
 }
 
 .showflow-presenter-controls {
   position: absolute;
-  bottom: 2rem;
-  right: 2rem;
+  bottom: 2vh;
+  right: 2vw;
+  z-index: 1001;
 }

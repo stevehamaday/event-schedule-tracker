@@ -167,8 +167,8 @@ const ShowFlowAgent = () => {
   // New: Debug/settings pane visibility
   const [showDebug, setShowDebug] = useState(false);
   
-  // New: Speaker View toggle
-  const [speakerViewMode, setSpeakerViewMode] = useState(false);
+  // New: Presenter View toggle
+  const [presenterViewMode, setPresenterViewMode] = useState(false);
 
   // Debug: set now to a custom date/time
   const [debugNow, setDebugNow] = useState(null);
@@ -633,7 +633,7 @@ const ShowFlowAgent = () => {
         e.preventDefault(); handleAddSegment(schedule.length);
       }
       if (e.key === '?') { e.preventDefault(); setShowShortcuts(true); }
-      if (e.key === 'F3') { e.preventDefault(); toggleSpeakerView(); } // F3 for Speaker View toggle
+      if (e.key === 'F3') { e.preventDefault(); togglePresenterView(); } // F3 for Presenter View toggle
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -687,9 +687,9 @@ const ShowFlowAgent = () => {
     localStorage.removeItem('showflow-schedule');
   };
 
-  // Toggle Speaker View
-  const toggleSpeakerView = () => {
-    setSpeakerViewMode(prev => !prev);
+  // Toggle Presenter View
+  const togglePresenterView = () => {
+    setPresenterViewMode(prev => !prev);
   };
 
   // Helper: check if mobile device (refined)
@@ -757,14 +757,14 @@ const ShowFlowAgent = () => {
           </div>
         </header>
         <main className="showflow-main">
-          {speakerViewMode ? (
-            // Speaker View Mode - Large, simple display for speakers (16:9 layout)
-            <div className="showflow-speaker-view" style={{ position: 'relative' }}>
+          {presenterViewMode ? (
+            // Presenter View Mode - Large, simple display for presenters (16:9 layout)
+            <div className="showflow-presenter-view fullscreen" style={{ position: 'relative' }}>
               {schedule.length === 0 ? (
-                <div className="showflow-speaker-empty">
+                <div className="showflow-presenter-empty">
                   <h1>No Schedule Loaded</h1>
-                  <p>Please load a schedule to use Speaker View</p>
-                  <button className="showflow-btn primary large" onClick={toggleSpeakerView}>
+                  <p>Please load a schedule to use Presenter View</p>
+                  <button className="showflow-btn primary large" onClick={togglePresenterView}>
                     ← Return to Normal View
                   </button>
                 </div>
@@ -772,64 +772,55 @@ const ShowFlowAgent = () => {
                 <>
                   {/* Current Segment Display - Left Side (2/3 width) */}
                   {currentIdx !== null && schedule[currentIdx] ? (
-                    <div className="showflow-speaker-current">
-                      <div className="showflow-speaker-label">Current Segment</div>
-                      <div className="showflow-speaker-title">{schedule[currentIdx].segment}</div>
-                      <div className="showflow-speaker-time">{schedule[currentIdx].time}</div>
+                    <div className="showflow-presenter-current">
+                      <div className="showflow-presenter-label">Current Segment</div>
+                      <div className="showflow-presenter-title">{schedule[currentIdx].segment}</div>
+                      <div className="showflow-presenter-time">{schedule[currentIdx].time}</div>
                       {schedule[currentIdx].presenter && (
-                        <div className="showflow-speaker-presenter">Presenter: {schedule[currentIdx].presenter}</div>
+                        <div className="showflow-presenter-presenter">Presenter: {schedule[currentIdx].presenter}</div>
                       )}
                       <div 
-                        className={`showflow-speaker-timer ${
+                        className={`showflow-presenter-timer ${
                           segmentTimer <= 10 ? 'critical' : 
                           segmentTimer <= 30 ? 'warning' : ''
                         }`}
                       >
-                        <span className="showflow-speaker-timer-icon">
+                        <span className="showflow-presenter-timer-icon">
                           {segmentTimer <= 10 ? '🚨' : segmentTimer <= 30 ? '⚠️' : '⏳'}
                         </span>
-                        <span className="showflow-speaker-timer-text">
+                        <span className="showflow-presenter-timer-text">
                           {Math.floor(segmentTimer / 60)}:{(segmentTimer % 60).toString().padStart(2, '0')} remaining
                         </span>
                       </div>
                       {overrunIdx === currentIdx && (
-                        <div className="showflow-speaker-overrun">⚠️ OVERRUN!</div>
+                        <div className="showflow-presenter-overrun">⚠️ OVERRUN!</div>
                       )}
                     </div>
                   ) : (
-                    <div className="showflow-speaker-current">
-                      <div className="showflow-speaker-label">Schedule Status</div>
-                      <div className="showflow-speaker-title">No Active Segment</div>
-                      <div className="showflow-speaker-time">Event has not started or has ended</div>
-                      {schedule.length > 0 && (
-                        <div className="showflow-speaker-presenter">
-                          Next up: {schedule[0].segment} at {schedule[0].time}
-                        </div>
-                      )}
+                    <div className="showflow-presenter-current">
+                      <div className="showflow-presenter-label">Schedule Status</div>
+                      <div className="showflow-presenter-title">No Segment Active</div>
+                      <div className="showflow-presenter-time">Waiting for schedule to start...</div>
                     </div>
                   )}
-
                   {/* Next Segment Display - Right Side (1/3 width) */}
-                  {currentIdx !== null && currentIdx < schedule.length - 1 && schedule[currentIdx + 1] ? (
-                    <div className="showflow-speaker-next">
-                      <div className="showflow-speaker-label">Up Next</div>
-                      <div className="showflow-speaker-next-title">{schedule[currentIdx + 1].segment}</div>
-                      <div className="showflow-speaker-next-time">{schedule[currentIdx + 1].time}</div>
-                      {schedule[currentIdx + 1].presenter && (
-                        <div className="showflow-speaker-next-presenter">Presenter: {schedule[currentIdx + 1].presenter}</div>
-                      )}
+                  {currentIdx !== null && schedule[currentIdx + 1] ? (
+                    <div className="showflow-presenter-next">
+                      <div className="showflow-presenter-label">Next Up</div>
+                      <div className="showflow-presenter-next-title">{schedule[currentIdx + 1].segment}</div>
+                      <div className="showflow-presenter-next-time">{schedule[currentIdx + 1].time}</div>
                     </div>
                   ) : currentIdx !== null && currentIdx === schedule.length - 1 ? (
-                    <div className="showflow-speaker-next">
-                      <div className="showflow-speaker-label">Schedule Status</div>
-                      <div className="showflow-speaker-next-title">Final Segment</div>
-                      <div className="showflow-speaker-next-time">Event concludes after this segment</div>
+                    <div className="showflow-presenter-next">
+                      <div className="showflow-presenter-label">Schedule Status</div>
+                      <div className="showflow-presenter-next-title">Final Segment</div>
+                      <div className="showflow-presenter-next-time">Event concludes after this segment</div>
                     </div>
                   ) : null}
 
                   {/* Quick Return Button - Positioned at bottom-right */}
-                  <div className="showflow-speaker-controls">
-                    <button className="showflow-btn large" onClick={toggleSpeakerView}>
+                  <div className="showflow-presenter-controls">
+                    <button className="showflow-btn large" onClick={togglePresenterView}>
                       ← Normal View
                     </button>
                   </div>
@@ -1262,7 +1253,7 @@ const ShowFlowAgent = () => {
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 1000,
-            boxShadow: '0 -2px 8px rgba(60,80,160,0.04)'
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.04)'
           }}>
             <button
               className="showflow-btn"
@@ -1287,8 +1278,8 @@ const ShowFlowAgent = () => {
                 <button className="showflow-btn" onClick={toggleTheme} style={{ width: '90%', margin: '12px auto', display: 'block' }}>
                   {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
                 </button>
-                <button className="showflow-btn" onClick={toggleSpeakerView} style={{ width: '90%', margin: '12px auto', display: 'block', backgroundColor: speakerViewMode ? '#6c7bbd' : '', color: speakerViewMode ? '#fff' : '' }}>
-                  {speakerViewMode ? '← Normal View' : '👁️ Speaker View'}
+                <button className="showflow-btn" onClick={togglePresenterView} style={{ width: '90%', margin: '12px auto', display: 'block', backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : '' }}>
+                  {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
                 </button>
                 <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Undo</button>
                 <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Redo</button>
@@ -1321,8 +1312,8 @@ const ShowFlowAgent = () => {
             <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{marginRight:16}}>Undo</button>
             <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
             <button className="showflow-btn danger" onClick={handleResetAll} style={{marginRight:24}}>Reset All</button>
-            <button className="showflow-btn" onClick={toggleSpeakerView} style={{marginRight:8, backgroundColor: speakerViewMode ? '#6c7bbd' : '', color: speakerViewMode ? '#fff' : ''}}>
-              {speakerViewMode ? '← Normal View' : '👁️ Speaker View'}
+            <button className="showflow-btn" onClick={togglePresenterView} style={{marginRight:8, backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : ''}}>
+              {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
             </button>
             <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
             <a
@@ -1427,7 +1418,7 @@ const ShowFlowAgent = () => {
                 </div>
                 <div className="showflow-shortcut-item">
                   <div className="showflow-shortcut-key">F3</div>
-                  <div className="showflow-shortcut-desc">Toggle Speaker View</div>
+                  <div className="showflow-shortcut-desc">Toggle Presenter View</div>
                 </div>
                 <div className="showflow-shortcut-item">
                   <div className="showflow-shortcut-key">F5</div>

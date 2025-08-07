@@ -16,7 +16,7 @@ const reorder = (list, startIndex, endIndex) => {
 };
 
 // *** REPLACED: This is the new, flexible recalculateTimes function ***
-const recalculateTimes = (schedule, mode = 'cascade') => {
+const recalculateTimes = (schedule, mode = 'cascade', editedIndex = null) => {
   if (!schedule || schedule.length === 0) return [];
 
   const toMinutes = (timeStr) => {
@@ -41,6 +41,29 @@ const recalculateTimes = (schedule, mode = 'cascade') => {
     if (displayHours === 0) displayHours = 12;
     return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
   };
+
+  // --- LOGIC FOR 'smart-edit' MODE (For intelligent time edits that preserve context) ---
+  if (mode === 'smart-edit' && editedIndex !== null) {
+    return schedule.map((seg, i) => {
+      const duration = parseInt(String(seg.duration).replace(/[^0-9]/g, ''), 10) || 0;
+      
+      if (i < editedIndex) {
+        // Keep segments before the edited one unchanged
+        return { ...seg, duration: `${duration} min` };
+      } else if (i === editedIndex) {
+        // This is the edited segment - use its new time
+        return { ...seg, duration: `${duration} min` };
+      } else {
+        // Recalculate segments after the edited one
+        const prevSegment = schedule[i - 1];
+        const prevStartTime = toMinutes(prevSegment.time);
+        const prevDuration = parseInt(String(prevSegment.duration).replace(/[^0-9]/g, ''), 10) || 0;
+        const newStartTime = prevStartTime + prevDuration;
+        
+        return { ...seg, time: toTimeStr(newStartTime), duration: `${duration} min` };
+      }
+    });
+  }
 
   // --- LOGIC FOR 'cascade' MODE (Your existing, preferred logic for edits) ---
   if (mode === 'cascade') {
@@ -134,6 +157,7 @@ const ShowFlowAgent = () => {
   // Inline editing state
   const [editIdx, setEditIdx] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [originalEditValues, setOriginalEditValues] = useState({}); // Track original values to detect what changed
 
   // Undo/Redo state
   const [history, setHistory] = useState([]); // stack of previous schedules
@@ -349,19 +373,34 @@ const ShowFlowAgent = () => {
   const handleEdit = (idx) => {
     setEditIdx(idx);
     setEditValues(schedule[idx]);
+    setOriginalEditValues(schedule[idx]); // Store original values for comparison
   };
 
   // Save edits
   const handleSaveEdit = (idx) => {
     pushHistory(schedule);
     const updated = schedule.map((seg, i) => i === idx ? { ...editValues } : seg);
-    const recalculated = recalculateTimes(updated);
+    
+    // Determine if the time field was edited
+    const timeWasEdited = originalEditValues.time !== editValues.time;
+    
+    // Use smart-edit mode if time was changed, otherwise use cascade mode
+    const recalculated = timeWasEdited 
+      ? recalculateTimes(updated, 'smart-edit', idx)
+      : recalculateTimes(updated, 'cascade');
+    
     setSchedule(recalculated);
     setEditIdx(null);
     setEditValues({});
+    setOriginalEditValues({});
+    
+    const action = timeWasEdited 
+      ? `Edited start time for '${editValues.segment}' and updated subsequent segments`
+      : `Edited segment '${editValues.segment}' at position ${idx + 1} and recalculated times`;
+    
     setSummary((prev) => [
       ...prev,
-      `Edited segment '${editValues.segment}' at position ${idx + 1} and recalculated times.`
+      action
     ]);
   };
 
@@ -369,6 +408,7 @@ const ShowFlowAgent = () => {
   const handleCancelEdit = () => {
     setEditIdx(null);
     setEditValues({});
+    setOriginalEditValues({});
   };
 
   // Handle inline field change
@@ -980,6 +1020,8 @@ const ShowFlowAgent = () => {
                                   onChange={handleEditChange}
                                   className="showflow-input"
                                   style={{width:'6em'}}
+                                  placeholder="9:00 AM"
+                                  title="Edit start time - subsequent segments will be automatically adjusted"
                                   autoFocus
                                 />
                               </td>

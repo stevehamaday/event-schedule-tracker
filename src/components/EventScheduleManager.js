@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './PresenterView.css'; // Import presenter view styles
 import { parseExcelFile } from '../utils/excelParser'; // This path must be correct
+import { parseScheduleFile, parseClipboardData } from '../utils/enhancedParser';
+import DataPreviewModal from './DataPreviewModal';
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 import XLSX from 'xlsx';
@@ -13,7 +16,7 @@ const reorder = (list, startIndex, endIndex) => {
 };
 
 // *** REPLACED: This is the new, flexible recalculateTimes function ***
-const recalculateTimes = (schedule, mode = 'cascade') => {
+const recalculateTimes = (schedule, mode = 'cascade', editedIndex = null) => {
   if (!schedule || schedule.length === 0) return [];
 
   const toMinutes = (timeStr) => {
@@ -38,6 +41,29 @@ const recalculateTimes = (schedule, mode = 'cascade') => {
     if (displayHours === 0) displayHours = 12;
     return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
   };
+
+  // --- LOGIC FOR 'smart-edit' MODE (For intelligent time edits that preserve context) ---
+  if (mode === 'smart-edit' && editedIndex !== null) {
+    return schedule.map((seg, i) => {
+      const duration = parseInt(String(seg.duration).replace(/[^0-9]/g, ''), 10) || 0;
+      
+      if (i < editedIndex) {
+        // Keep segments before the edited one unchanged
+        return { ...seg, duration: `${duration} min` };
+      } else if (i === editedIndex) {
+        // This is the edited segment - use its new time
+        return { ...seg, duration: `${duration} min` };
+      } else {
+        // Recalculate segments after the edited one
+        const prevSegment = schedule[i - 1];
+        const prevStartTime = toMinutes(prevSegment.time);
+        const prevDuration = parseInt(String(prevSegment.duration).replace(/[^0-9]/g, ''), 10) || 0;
+        const newStartTime = prevStartTime + prevDuration;
+        
+        return { ...seg, time: toTimeStr(newStartTime), duration: `${duration} min` };
+      }
+    });
+  }
 
   // --- LOGIC FOR 'cascade' MODE (Your existing, preferred logic for edits) ---
   if (mode === 'cascade') {
@@ -131,6 +157,7 @@ const ShowFlowAgent = () => {
   // Inline editing state
   const [editIdx, setEditIdx] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [originalEditValues, setOriginalEditValues] = useState({}); // Track original values to detect what changed
 
   // Undo/Redo state
   const [history, setHistory] = useState([]); // stack of previous schedules
@@ -152,11 +179,11 @@ const ShowFlowAgent = () => {
 
   // New state for alert selection
   const [alertSegments, setAlertSegments] = useState([]); // array of indices
-
   // New state for expanded notes
   const [expandedNotesIdx, setExpandedNotesIdx] = useState(null);
-
-  // New: Track locked segments
+  // Enhanced parser preview modal state
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
   // New: Collapse/expand all notes
   const [allNotesExpanded, setAllNotesExpanded] = useState(false);
@@ -164,6 +191,9 @@ const ShowFlowAgent = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   // New: Debug/settings pane visibility
   const [showDebug, setShowDebug] = useState(false);
+  
+  // New: Presenter View toggle
+  const [presenterViewMode, setPresenterViewMode] = useState(false);
 
   // Debug: set now to a custom date/time
   const [debugNow, setDebugNow] = useState(null);
@@ -241,9 +271,26 @@ const ShowFlowAgent = () => {
       `Removed segment '${removed?.segment || ''}' at position ${index + 1} and recalculated times.`
     ]);
   };
-
-  // Parse schedule from textarea (robust, Excel-like)
+  // Enhanced parse schedule from textarea with preview
   const handleParseSchedule = () => {
+    if (!inputValue.trim()) return;
+    
+    try {
+      // Use enhanced clipboard parser
+      const parseResult = parseClipboardData(inputValue);
+      
+      // Show preview modal
+      setPreviewData(parseResult);
+      setShowPreviewModal(true);
+      
+    } catch (err) {
+      // Fallback to old parser for compatibility
+      handleParseScheduleFallback();
+    }
+  };
+
+  // Fallback parser (original logic)
+  const handleParseScheduleFallback = () => {
     pushHistory(schedule);
     // Split lines, trim, and filter out empty
     const lines = inputValue.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -271,52 +318,89 @@ const ShowFlowAgent = () => {
         segment: cells[colMap.segment] ? cells[colMap.segment].trim() : '',
         presenter: cells[colMap.presenter] ? cells[colMap.presenter].trim() : '',
         notes: cells[colMap.notes] ? cells[colMap.notes].trim() : ''
-      };    });
+      };
+    });
     const recalculated = recalculateTimes(parsed);
     setSchedule(recalculated);
     setSummary((prev) => [...prev, 'Parsed schedule from input and recalculated times.']);
   };
-
-  // File upload handler
+  // Enhanced file upload handler with preview
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
     try {
-      pushHistory(schedule);
-      const parsed = await parseExcelFile(file);
-      // If no duration, default to 30 min for demo
-      const withDefaults = parsed.map(seg => ({
-        ...seg,
-        duration: seg.duration || '30',
-      }));
-
-      // *** UPDATED: This now uses the 'preserve' mode for the initial upload ***
-      const recalculated = recalculateTimes(withDefaults, 'preserve');
+      // Use enhanced parser
+      const parseResult = await parseScheduleFile(file);
       
-      setSchedule(recalculated);
-      setSummary((prev) => [...prev, `Loaded schedule from file and recalculated times.`]);
+      // Show preview modal
+      setPreviewData(parseResult);
+      setShowPreviewModal(true);
+      
     } catch (err) {
-      alert('Failed to parse file. Please upload a valid .xlsx or .csv with columns: Time, Duration, Segment, Presenter.');
+      alert(`Failed to parse file: ${err.message}`);
     }
+  };
+
+  // Handle accepting data from preview modal
+  const handleAcceptPreview = (data) => {
+    pushHistory(schedule);
+    
+    // Apply default duration if missing
+    const withDefaults = data.map(seg => ({
+      ...seg,
+      duration: seg.duration || '30',
+    }));
+
+    // Use preserve mode for initial upload
+    const recalculated = recalculateTimes(withDefaults, 'preserve');
+    
+    setSchedule(recalculated);
+    setSummary((prev) => [...prev, `Loaded schedule from ${previewData.metadata.fileName} with ${data.length} segments.`]);
+    
+    // Close modal
+    setShowPreviewModal(false);
+    setPreviewData(null);
+  };
+
+  // Handle rejecting data from preview modal
+  const handleRejectPreview = () => {
+    setShowPreviewModal(false);
+    setPreviewData(null);
   };
 
   // Start editing a row
   const handleEdit = (idx) => {
     setEditIdx(idx);
     setEditValues(schedule[idx]);
+    setOriginalEditValues(schedule[idx]); // Store original values for comparison
   };
 
   // Save edits
   const handleSaveEdit = (idx) => {
     pushHistory(schedule);
     const updated = schedule.map((seg, i) => i === idx ? { ...editValues } : seg);
-    const recalculated = recalculateTimes(updated);
+    
+    // Determine if the time field was edited
+    const timeWasEdited = originalEditValues.time !== editValues.time;
+    
+    // Use smart-edit mode if time was changed, otherwise use cascade mode
+    const recalculated = timeWasEdited 
+      ? recalculateTimes(updated, 'smart-edit', idx)
+      : recalculateTimes(updated, 'cascade');
+    
     setSchedule(recalculated);
     setEditIdx(null);
     setEditValues({});
+    setOriginalEditValues({});
+    
+    const action = timeWasEdited 
+      ? `Edited start time for '${editValues.segment}' and updated subsequent segments`
+      : `Edited segment '${editValues.segment}' at position ${idx + 1} and recalculated times`;
+    
     setSummary((prev) => [
       ...prev,
-      `Edited segment '${editValues.segment}' at position ${idx + 1} and recalculated times.`
+      action
     ]);
   };
 
@@ -324,6 +408,7 @@ const ShowFlowAgent = () => {
   const handleCancelEdit = () => {
     setEditIdx(null);
     setEditValues({});
+    setOriginalEditValues({});
   };
 
   // Handle inline field change
@@ -532,6 +617,10 @@ const ShowFlowAgent = () => {
     ]);
   };
 
+  // Check if any segments have notes
+  const hasNotesInSchedule = () => {
+    return schedule.some(seg => seg.notes && seg.notes.trim().length > 0);
+  };
 
   // Collapse/expand all notes
   const handleToggleAllNotes = () => {
@@ -585,6 +674,7 @@ const ShowFlowAgent = () => {
         e.preventDefault(); handleAddSegment(schedule.length);
       }
       if (e.key === '?') { e.preventDefault(); setShowShortcuts(true); }
+      if (e.key === 'F3') { e.preventDefault(); togglePresenterView(); } // F3 for Presenter View toggle
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -624,17 +714,23 @@ const ShowFlowAgent = () => {
   useEffect(() => {
     localStorage.setItem('showflow-schedule', JSON.stringify(schedule));
   }, [schedule]);
-
   // In the Reset All handler, also clear localStorage
   const handleResetAll = () => {
-    setSchedule([]);    setHistory([]);
+    setSchedule([]);
+    setHistory([]);
     setFuture([]);
     setSummary([]);
     setAlerts([]);
     setAlertSegments([]);
     setExpandedNotesIdx(null);
     setAllNotesExpanded(false);
+    setInputValue(''); // Clear the input box
     localStorage.removeItem('showflow-schedule');
+  };
+
+  // Toggle Presenter View
+  const togglePresenterView = () => {
+    setPresenterViewMode(prev => !prev);
   };
 
   // Helper: check if mobile device (refined)
@@ -701,7 +797,81 @@ const ShowFlowAgent = () => {
             />
           </div>
         </header>
-        <main className="showflow-main">          {/* Floating sticky bar for current segment */}
+
+        {/* Conditional rendering for Presenter View - outside of main content flow */}
+        {presenterViewMode && (
+            <div className="showflow-presenter-view fullscreen">
+              {schedule.length === 0 ? (
+                <div className="showflow-presenter-empty">
+                  <h1>No Schedule Loaded</h1>
+                  <p>Please load a schedule to use Presenter View</p>
+                  <button className="showflow-btn primary large" onClick={togglePresenterView}>
+                    ← Return to Normal View
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Current Segment Display */}
+                  {currentIdx !== null && schedule[currentIdx] ? (
+                    <div className="showflow-presenter-current">
+                      <div className="showflow-presenter-label">Current Segment</div>
+                      <div className="showflow-presenter-title">{schedule[currentIdx].segment}</div>
+                      <div className="showflow-presenter-time">{schedule[currentIdx].time}</div>
+                      {schedule[currentIdx].presenter && (
+                        <div className="showflow-presenter-presenter">Presenter: {schedule[currentIdx].presenter}</div>
+                      )}
+                      <div 
+                        className={`showflow-presenter-timer ${
+                          segmentTimer <= 10 ? 'critical' : 
+                          segmentTimer <= 30 ? 'warning' : ''
+                        }`}
+                      >
+                        <span className="showflow-presenter-timer-icon">
+                          {segmentTimer <= 10 ? '🚨' : segmentTimer <= 30 ? '⚠️' : '⏳'}
+                        </span>
+                        <span className="showflow-presenter-timer-text">
+                          {Math.floor(segmentTimer / 60)}:{(segmentTimer % 60).toString().padStart(2, '0')} remaining
+                        </span>
+                      </div>
+                      {overrunIdx === currentIdx && (
+                        <div className="showflow-presenter-overrun">⚠️ OVERRUN!</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="showflow-presenter-current">
+                      <div className="showflow-presenter-label">Schedule Status</div>
+                      <div className="showflow-presenter-title">No Segment Active</div>
+                      <div className="showflow-presenter-time">Waiting for schedule to start...</div>
+                    </div>
+                  )}
+                  {/* Next Segment Display */}
+                  {currentIdx !== null && schedule[currentIdx + 1] ? (
+                    <div className="showflow-presenter-next">
+                      <div className="showflow-presenter-label">Next Up</div>
+                      <div className="showflow-presenter-next-title">{schedule[currentIdx + 1].segment}</div>
+                      <div className="showflow-presenter-next-time">{schedule[currentIdx + 1].time}</div>
+                    </div>
+                  ) : currentIdx !== null && currentIdx === schedule.length - 1 ? (
+                    <div className="showflow-presenter-next">
+                      <div className="showflow-presenter-label">Schedule Status</div>
+                      <div className="showflow-presenter-next-title">Final Segment</div>
+                      <div className="showflow-presenter-next-time">Event concludes after this segment</div>
+                    </div>
+                  ) : null}
+
+                  {/* Quick Return Button */}
+                  <div className="showflow-presenter-controls">
+                    <button className="showflow-btn large" onClick={togglePresenterView}>
+                      ← Normal View
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+        )}
+
+        <main className="showflow-main" style={{ display: presenterViewMode ? 'none' : 'block' }}>
+          {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
             <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#232a5c' } : {}}>
               <span className="showflow-current-pulse" />
@@ -718,10 +888,31 @@ const ShowFlowAgent = () => {
                 </span>
               )}
             </div>
-          )}
-          {/* Schedule Input Section */}
+          )}          {/* Schedule Input Section */}
           <section className="showflow-card">
-            <h2>Import Schedule</h2>
+            <h2>Import or Paste Schedule</h2>
+            <p style={{fontSize: '0.85em', color: '#666', marginTop: '-8px', marginBottom: 16}}>
+              <em>Single-day events only • Multi-day support coming soon</em>
+            </p>
+            <p style={{marginBottom: 16}}>
+              <a 
+                href="https://aka.ms/showflowtrackertemplate" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="showflow-btn"
+                style={{
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                  backgroundColor: '#6c7bbd',
+                  color: '#fff',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  fontSize: '0.9em'
+                }}
+              >
+                📋 Click for Schedule Template
+              </a>
+            </p>
             <textarea
               className="showflow-textarea"
               placeholder="Paste your schedule here..."
@@ -744,34 +935,36 @@ const ShowFlowAgent = () => {
                 <span>Upload .xlsx or .csv</span>
               </label>
             </div>
-          </section>
-          {/* Schedule Table Display */}
+          </section>          {/* Schedule Table Display */}
           <section className="showflow-card">
             <h2>Current Schedule</h2>
-            <button className="showflow-btn" style={{marginBottom:12}} onClick={handleToggleAllNotes}>
-              {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
-            </button>
-            {schedule.length === 0 ? (
-              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
-                <p style={{fontSize:'1.08em',marginBottom:16}}>
-                  You can build your schedule here by adding segments.<br />
-                  <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
-                </p>
-                <button
-                  className="showflow-btn primary"
-                  style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
-                  onClick={() => handleAddSegment(0)}
-                >
-                  + Start a New Schedule
-                </button>
-              </div>
+            {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
+                  <p style={{fontSize:'1.08em',marginBottom:16}}>
+                    You can build your schedule here by adding segments.<br />
+                    <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
+                  </p>                <button
+                    className="showflow-btn primary"
+                    style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
+                    onClick={() => handleAddSegment(0)}
+                  >
+                    + Create a New Schedule
+                  </button>
+                </div>
             ) : (
+              <>
+                {hasNotesInSchedule() && (
+                  <button 
+                    className="showflow-btn" 
+                    style={{marginBottom:12}} 
+                    onClick={handleToggleAllNotes}
+                  >
+                    {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
+                  </button>
+                )}
               <div className="showflow-table-container">
-                <table className="showflow-table">
-                  <thead>
+                <table className="showflow-table">                  <thead>
                     <tr>
                       <th></th> {/* Alert icon column */}
-                      <th></th> {/* Lock icon column */}
                       <th>Time</th>
                       <th>Duration</th>
                       <th>Segment</th>
@@ -796,8 +989,7 @@ const ShowFlowAgent = () => {
                           style={{ cursor: 'pointer', position: 'relative' }}
                           onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
                           title="Click to reveal or add notes"
-                        >
-                          {/* Render icons on the right for mobile, left for desktop */}
+                        >                          {/* Render icons on the right for mobile, left for desktop */}
                           {!isMobile() && (
                             <>
                               {/* Alert icon */}
@@ -815,11 +1007,10 @@ const ShowFlowAgent = () => {
                                     <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#232a5c':'#bbb'}}>
                                       {alertSegments.includes(i) ? '🔔' : '🔕'}
                                     </span>
-                                  </button>
-                                )}                              </td>
+                                  </button>                                )}
+                              </td>
                             </>
-                          )}
-                          {/* Editable fields */}
+                          )}                          {/* Editable fields */}
                           {editIdx === i ? (
                             <>
                               <td>
@@ -829,6 +1020,8 @@ const ShowFlowAgent = () => {
                                   onChange={handleEditChange}
                                   className="showflow-input"
                                   style={{width:'6em'}}
+                                  placeholder="9:00 AM"
+                                  title="Edit start time - subsequent segments will be automatically adjusted"
                                   autoFocus
                                 />
                               </td>
@@ -874,10 +1067,20 @@ const ShowFlowAgent = () => {
                               {/* Duplicate button */}
                               <td>
                                 <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
-                              </td>
-                              {/* Add segment after */}
+                              </td>                              {/* Add segment after */}
                               <td>
-                                <button className="showflow-btn" title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }}>+</button>
+                                <button className={`showflow-btn ${schedule.length <= 2 ? 'primary' : ''}`} title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} style={{
+                                    ...(schedule.length === 1 && i === 0 ? {
+                                      background: '#22c55e',
+                                      color: 'white',
+                                      fontWeight: 'bold',
+                                      animation: 'pulse 2s infinite',
+                                      boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.2)'
+                                    } : {})
+                                  }}
+                                >
+                                  {schedule.length === 1 && i === 0 ? '+ Add Next' : '+'}
+                                </button>
                               </td>
                               {/* Remove segment */}
                               <td>
@@ -898,7 +1101,7 @@ const ShowFlowAgent = () => {
                                   overflowX: 'auto', // allow horizontal scroll if needed
                                   paddingRight: 8
                                 }}>
-                                  {/* Alert and lock icons removed from mobile view to prevent overlap with Edit button */}
+                                  {/* Alert icon removed from mobile view to prevent overlap with Edit button */}
                                 </td>
                               )}
                             </>
@@ -925,10 +1128,72 @@ const ShowFlowAgent = () => {
                           </tr>
                         )}
                       </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    ))}                  </tbody>                </table>
+              </div>              {/* Helpful guidance for building schedule */}
+              {schedule.length > 0 && schedule.length <= 3 && (
+                <div className="showflow-build-guidance" style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginTop: '16px',
+                  textAlign: 'center',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  opacity: editIdx !== null ? 0.6 : 1,
+                  transition: 'opacity 0.3s ease',
+                  pointerEvents: editIdx !== null ? 'none' : 'auto'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '1.2em' }}>🎯</span>                    <strong style={{ color: '#1e293b' }}>
+                      {schedule.length === 1 ? 'Great start! Keep building your schedule' : 'Looking good! Add more segments to complete your schedule'}
+                    </strong>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
+                    <button
+                      className="showflow-btn primary"
+                      onClick={() => handleAddSegment(schedule.length)}
+                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                    >
+                      + Add Next Segment
+                    </button>
+                    
+                    <button
+                      className="showflow-btn"
+                      onClick={() => handleAddSegment(0)}
+                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                    >
+                      + Add at Beginning
+                    </button>
+
+                    {schedule.length > 1 && (
+                      <button
+                        className="showflow-btn"
+                        onClick={() => handleAddSegment(Math.floor(schedule.length / 2))}
+                        style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                      >
+                        + Insert in Middle
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '0.85em', color: '#64748b', lineHeight: '1.4' }}>
+                    <div style={{ marginBottom: '4px' }}>
+                      💡 <strong>Quick tips:</strong> Click the <strong>+</strong> button next to any segment to add after it
+                    </div>
+                    <div>
+                      ⌨️ <strong>Keyboard shortcuts:</strong> Press <kbd style={{
+                        background: '#e2e8f0',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.8em',
+                        border: '1px solid #cbd5e1'
+                      }}>Ctrl+Enter</kbd> to add segments quickly
+                    </div>
+                  </div>
+                </div>
+              )}
+              </>
             )}
           </section>
           {/* Summary/Action Log Section */}
@@ -1012,7 +1277,9 @@ const ShowFlowAgent = () => {
           )}
         </main>
         {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}
-        {isMobileDevice ? (
+        {!presenterViewMode && (
+          <>
+            {isMobileDevice ? (
           <footer className="showflow-footer-controls" style={{
             position: 'fixed',
             bottom: 0,
@@ -1025,7 +1292,7 @@ const ShowFlowAgent = () => {
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 1000,
-            boxShadow: '0 -2px 8px rgba(60,80,160,0.04)'
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.04)'
           }}>
             <button
               className="showflow-btn"
@@ -1049,6 +1316,9 @@ const ShowFlowAgent = () => {
               }}>
                 <button className="showflow-btn" onClick={toggleTheme} style={{ width: '90%', margin: '12px auto', display: 'block' }}>
                   {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+                </button>
+                <button className="showflow-btn" onClick={togglePresenterView} style={{ width: '90%', margin: '12px auto', display: 'block', backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : '' }}>
+                  {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
                 </button>
                 <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Undo</button>
                 <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Redo</button>
@@ -1081,7 +1351,19 @@ const ShowFlowAgent = () => {
             <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{marginRight:16}}>Undo</button>
             <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
             <button className="showflow-btn danger" onClick={handleResetAll} style={{marginRight:24}}>Reset All</button>
+            <button className="showflow-btn" onClick={togglePresenterView} style={{marginRight:8, backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : ''}}>
+              {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
+            </button>
             <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
+            <a
+              href="https://aka.ms/sfbugtracker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="showflow-btn"
+              style={{ marginLeft: 8 }}
+            >
+              🐞 Report a Bug
+            </a>
           </footer>
         )}
         {/* QR Code & Share Modal */}
@@ -1174,6 +1456,10 @@ const ShowFlowAgent = () => {
                   <div className="showflow-shortcut-desc">Toggle theme</div>
                 </div>
                 <div className="showflow-shortcut-item">
+                  <div className="showflow-shortcut-key">F3</div>
+                  <div className="showflow-shortcut-desc">Toggle Presenter View</div>
+                </div>
+                <div className="showflow-shortcut-item">
                   <div className="showflow-shortcut-key">F5</div>
                   <div className="showflow-shortcut-desc">Refresh schedule</div>
                 </div>
@@ -1183,7 +1469,47 @@ const ShowFlowAgent = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div>        )}
+
+        {/* Mobile Floating Action Button for adding segments */}
+        {isMobileDevice && schedule.length > 0 && schedule.length <= 3 && (
+          <button
+            onClick={() => handleAddSegment(schedule.length)}
+            style={{
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              backgroundColor: '#22c55e',
+              color: 'white',
+              border: 'none',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              cursor: 'pointer',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease'
+            }}
+            title="Add next segment"
+          >
+            +
+          </button>
+        )}
+
+        {/* Enhanced Data Preview Modal */}
+        <DataPreviewModal
+          isOpen={showPreviewModal}
+          onClose={handleRejectPreview}
+          parseResult={previewData}
+          onAccept={handleAcceptPreview}
+          onReject={handleRejectPreview}
+        />
+          </>
         )}
       </div>
     </MobileErrorBoundary>

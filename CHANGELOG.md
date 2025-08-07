@@ -1,3 +1,53 @@
+## [1.2.5] - 2025-06-11
+
+### Added
+- **Bug Reporting**: Added "Report a Bug" button to the desktop footer controls
+- Bug report button links to https://aka.ms/sfbugtracker for easy issue submission
+- Button positioned to the right of the "Dark Mode" toggle in the bottom control panel
+
+### Changed
+- Enhanced footer controls layout to accommodate new bug reporting functionality
+- Improved user access to feedback and support channels
+
+## [1.2.4] - 2025-06-10
+
+### Changed
+- **UI Improvement**: Improved schedule import header and messaging for better user experience
+- Updated main header from "Import or Paste Schedule (Single Day Only*)" to clean "Import or Paste Schedule"
+- Added professional subheading with single-day limitation and multi-day roadmap notice
+- Enhanced visual hierarchy with proper styling for limitation notice (smaller font, gray color, italic)
+- Improved user communication about current capabilities and future roadmap
+
+## [1.2.3] - 2025-06-10
+
+### Added
+- Template link integration for schedule format guidance
+- Enhanced "Reset All" functionality to clear localStorage and input textarea
+
+### Changed
+- Updated button text for creating a schedule to be more user-friendly ("+ Create a New Schedule")
+- Added prominent template link (https://aka.ms/showflowtrackertemplate) to help users format their schedules
+- Improved reset functionality to provide complete application cleanup
+
+### Fixed
+- Reset All button now properly clears all application state including localStorage persistence
+
+## [1.2.2] - 2025-06-06
+
+### Added
+- Major mobile UI improvements and responsive design fixes (from experimental-fixes branch merge)
+- "Expand All Notes" button now appears only when notes exist and is moved below the "Start New Schedule" button
+
+### Removed
+- Lock functionality for schedule segments
+
+### Changed
+- Code cleanup and removal of backup files
+- All features tested and marked stable
+
+### Fixed
+- Responsive design issues on mobile and desktop
+
 ## [1.2.1] - 2025-06-05
 
 ### Fixed

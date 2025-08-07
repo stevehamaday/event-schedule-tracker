@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import './PresenterView.css'; // Import the CSS file for styles
 
 const PresenterView = () => {
   const [schedule, setSchedule] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(null);
   const [segmentTimer, setSegmentTimer] = useState(0);
   const [totalTimer, setTotalTimer] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Load schedule from localStorage (shared by main app)
   useEffect(() => {
@@ -101,39 +103,83 @@ const PresenterView = () => {
     return () => clearInterval(interval);
   }, [schedule]);
 
+  const toggleFullScreen = () => {
+    if (!isFullScreen) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+    setIsFullScreen(!isFullScreen);
+  };
+
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    };
+  }, []);
+
   if (!schedule.length) {
-    return <div style={{padding:32, textAlign:'center'}}><h2>Presenter View</h2><p>No schedule loaded.</p></div>;
+    return (
+      <div className="showflow-presenter-view showflow-presenter-empty">
+        <h1>Presenter View</h1>
+        <p>No schedule loaded. Please add segments in the main view.</p>
+      </div>
+    );
   }
 
+  const currentSegment = currentIdx !== null ? schedule[currentIdx] : null;
+  const nextSegments = currentIdx !== null ? schedule.slice(currentIdx + 1, currentIdx + 4) : [];
+
   return (
-    <div style={{ padding: 24, maxWidth: 600, margin: '0 auto', fontSize: '1.18em', background: '#f8fafd', borderRadius: 12, boxShadow: '0 2px 12px #0001' }}>
-      <h2 style={{textAlign:'center'}}>Presenter View</h2>
-      {currentIdx !== null && schedule[currentIdx] && (
-        <div style={{margin:'18px 0', background:'#e9ecf5', borderRadius:10, padding:18, textAlign:'center'}}>
-          <strong style={{fontSize:'1.1em'}}>Current Segment:</strong><br />
-          <span style={{fontSize:'1.3em', fontWeight:600}}>{schedule[currentIdx].segment}</span><br />
-          <span style={{color:'#232a5c'}}>{schedule[currentIdx].time} ({schedule[currentIdx].duration})</span>
-          <div style={{marginTop:10, color:'#6c7bbd', fontWeight:500}}>
-            <span role="img" aria-label="timer">⏳</span> {Math.floor(segmentTimer/60)}:{(segmentTimer%60).toString().padStart(2,'0')} left
+    <div className={`showflow-presenter-view ${isFullScreen ? 'fullscreen' : ''}`}>
+      {currentSegment ? (
+        <>
+          <div className="showflow-presenter-current">
+            <div className="showflow-presenter-label">Current Segment</div>
+            <div className="showflow-presenter-title">{currentSegment.segment}</div>
+            <div className="showflow-presenter-time">{currentSegment.time} ({currentSegment.duration})</div>
+            {currentSegment.presenter && <div className="showflow-presenter-presenter">{currentSegment.presenter}</div>}
+            <div className={`showflow-presenter-timer ${segmentTimer < 60 ? 'critical' : segmentTimer < 300 ? 'warning' : ''}`}>
+              <span className="showflow-presenter-timer-text">
+                {Math.floor(segmentTimer / 60)}:{(segmentTimer % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+            {segmentTimer < 0 && <div className="showflow-presenter-overrun">OVERRUN</div>}
           </div>
-          {schedule[currentIdx].notes && (
-            <div style={{marginTop:10, color:'#555'}}><strong>Notes:</strong> {schedule[currentIdx].notes}</div>
-          )}
+          <div className="showflow-presenter-next">
+            <div className="showflow-presenter-label">Up Next</div>
+            {nextSegments.length > 0 ? (
+              <ul className="showflow-presenter-next-list">
+                {nextSegments.map((seg, idx) => (
+                  <li key={idx}>
+                    <span className="segment-title">{seg.segment}</span>
+                    <span className="segment-time">{seg.time}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>End of schedule</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="showflow-presenter-empty">
+          <h1>Presenter View</h1>
+          <p>Waiting for the show to start...</p>
         </div>
       )}
-      <div style={{margin:'18px 0'}}>
-        <strong>Next Segments:</strong>
-        <ul style={{paddingLeft:18}}>
-          {schedule.slice(currentIdx+1, currentIdx+4).map((seg, idx) => (
-            <li key={idx} style={{marginBottom:6}}>
-              <span style={{fontWeight:600}}>{seg.segment}</span> <span style={{color:'#6c7bbd'}}>{seg.time}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div style={{margin:'18px 0', textAlign:'center'}}>
-        <strong>Total Time Left in Schedule:</strong><br />
-        <span style={{fontSize:'1.2em', color:'#232a5c'}}>{Math.floor(totalTimer/60)}:{(totalTimer%60).toString().padStart(2,'0')}</span>
+      <div className="showflow-presenter-controls">
+        <button onClick={toggleFullScreen} className="showflow-btn">
+          {isFullScreen ? 'Exit Fullscreen' : 'Go Fullscreen'}
+        </button>
+        <div className="showflow-total-timer">
+          <strong>Total Time Left: </strong>
+          {Math.floor(totalTimer / 60)}:{(totalTimer % 60).toString().padStart(2, '0')}
+        </div>
       </div>
     </div>
   );

@@ -603,3 +603,126 @@ body {
     transform: scale(1.02);
   }
 }
+
+/* === MICROSOFT THEME === */
+body.microsoft {
+  background: #ffffff;
+  color: #323130;
+}
+
+.microsoft .showflow-root {
+  background: #ffffff;
+  color: #323130;
+}
+
+/* Microsoft color palette:
+   #F25022 (red-orange)
+   #7FBA00 (green) 
+   #00A4EF (blue)
+   #FFB900 (yellow)
+*/
+
+.microsoft .showflow-navbar {
+  background: #F25022;
+  color: white;
+}
+
+.microsoft .showflow-card,
+.microsoft .showflow-ai-card {
+  background: #ffffff;
+  border: 1px solid #edebe9;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  color: #323130;
+}
+
+.microsoft .showflow-btn {
+  background: #00A4EF;
+  color: white;
+  border: 1px solid #00A4EF;
+}
+
+.microsoft .showflow-btn:hover {
+  background: #0078d4;
+  border-color: #0078d4;
+}
+
+.microsoft .showflow-btn.danger {
+  background: #F25022;
+  border-color: #F25022;
+  color: white;
+}
+
+.microsoft .showflow-btn.danger:hover {
+  background: #d13300;
+  border-color: #d13300;
+}
+
+.microsoft .showflow-btn.success {
+  background: #7FBA00;
+  color: white;
+  border-color: #7FBA00;
+}
+
+.microsoft .showflow-btn.success:hover {
+  background: #6a9a00;
+  border-color: #6a9a00;
+}
+
+.microsoft .status-running {
+  background: #7FBA00;
+  color: white;
+}
+
+.microsoft .status-upcoming {
+  background: #FFB900;
+  color: #323130;
+}
+
+.microsoft .status-completed {
+  background: #6c757d;
+  color: white;
+}
+
+.microsoft .time-cell {
+  border: 1px solid #edebe9;
+}
+
+.microsoft .time-cell:focus {
+  border-color: #00A4EF;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 164, 239, 0.2);
+}
+
+.microsoft .event-list-item {
+  border: 1px solid #edebe9;
+  background: #ffffff;
+}
+
+.microsoft .event-list-item:hover {
+  background: #faf9f8;
+  border-color: #00A4EF;
+}
+
+.microsoft .presenter-header {
+  background: linear-gradient(135deg, #F25022 0%, #00A4EF 100%);
+  color: white;
+}
+
+.microsoft .time-display {
+  color: #FFB900;
+}
+
+/* Mobile nav overrides for Microsoft theme */
+.microsoft .mobile-nav-overlay {
+  background: #F25022 !important;
+}
+
+.microsoft .mobile-nav-button {
+  background: #00A4EF;
+  border-color: #00A4EF;
+}
+
+.microsoft .mobile-nav-button:hover {
+  background: #0078d4;
+  border-color: #0078d4;
+}

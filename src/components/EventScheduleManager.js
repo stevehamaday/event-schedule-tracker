@@ -659,11 +659,19 @@ const ShowFlowAgent = () => {
     return () => interval && clearInterval(interval);
   }, [schedule, now, debugNow]);
 
-  // Theme toggles (refined, only dark/light)
+  // Theme toggles (light/dark/microsoft)
   const toggleTheme = () => {
-    setTheme(t => (t === 'light' ? 'dark' : 'light'));
-    // Optionally, update body class for global dark mode
-    document.body.classList.toggle('dark', theme === 'light');
+    setTheme(t => {
+      if (t === 'light') return 'dark';
+      if (t === 'dark') return 'microsoft';
+      return 'light';
+    });
+    // Update body class for CSS targeting
+    setTimeout(() => {
+      document.body.classList.remove('dark', 'microsoft');
+      if (theme === 'light') document.body.classList.add('dark');
+      if (theme === 'dark') document.body.classList.add('microsoft');
+    }, 0);
   };
 
   // QR code and sharing
@@ -834,7 +842,9 @@ const ShowFlowAgent = () => {
         {isMobileDevice && mobileNavOpen && (
           <div style={{position:'fixed',top:54,left:0,right:0,background:'#232a5c',color:'#fff',zIndex:1002,padding:'18px 0',textAlign:'center'}}>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={() => setMobileNavOpen(false)}>Close Menu</button>
-            <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={toggleTheme}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
+            <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={toggleTheme}>
+              {theme === 'light' ? '🌙 Dark' : theme === 'dark' ? '🔶 Microsoft' : '☀️ Light'}
+            </button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleUndo} disabled={history.length === 0}>Undo</button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={handleRedo} disabled={future.length === 0}>Redo</button>
             <button className="showflow-btn danger" style={{width:'90%',margin:'8px 0'}} onClick={handleResetAll}>Reset All</button>
@@ -1376,7 +1386,7 @@ const ShowFlowAgent = () => {
                 padding: '12px 0'
               }}>
                 <button className="showflow-btn" onClick={toggleTheme} style={{ width: '90%', margin: '12px auto', display: 'block' }}>
-                  {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+                  {theme === 'light' ? '🌙 Dark' : theme === 'dark' ? '🔶 Microsoft' : '☀️ Light'}
                 </button>
                 <button className="showflow-btn" onClick={togglePresenterView} style={{ width: '90%', margin: '12px auto', display: 'block', backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : '' }}>
                   {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
@@ -1405,7 +1415,9 @@ const ShowFlowAgent = () => {
             <button className="showflow-btn" onClick={togglePresenterView} style={{marginRight:8, backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : ''}}>
               {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
             </button>
-            <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>{theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}</button>
+            <button className="showflow-btn" onClick={toggleTheme} style={{marginLeft:8}}>
+              {theme === 'light' ? '🌙 Dark' : theme === 'dark' ? '🔶 Microsoft' : '☀️ Light'}
+            </button>
             <a
               href="https://aka.ms/sfbugtracker"
               target="_blank"

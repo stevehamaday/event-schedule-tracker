@@ -46,20 +46,23 @@ const recalculateTimes = (schedule, mode = 'cascade', editedIndex = null) => {
   if (mode === 'smart-edit' && editedIndex !== null) {
     console.log('Smart-edit mode triggered:', { editedIndex, schedule });
     
-    return schedule.map((seg, i) => {
+    const result = [];
+    
+    for (let i = 0; i < schedule.length; i++) {
+      const seg = schedule[i];
       const duration = parseInt(String(seg.duration).replace(/[^0-9]/g, ''), 10) || 0;
       
       if (i < editedIndex) {
         // Keep segments before the edited one unchanged
         console.log(`Segment ${i}: keeping unchanged`);
-        return { ...seg, duration: `${duration} min` };
+        result.push({ ...seg, duration: `${duration} min` });
       } else if (i === editedIndex) {
         // This is the edited segment - keep its new time and duration
         console.log(`Segment ${i}: edited segment, time: ${seg.time}`);
-        return { ...seg, duration: `${duration} min` };
+        result.push({ ...seg, duration: `${duration} min` });
       } else {
-        // Recalculate segments after the edited one based on the previous segment
-        const prevSegment = schedule[i - 1];
+        // Recalculate segments after the edited one based on the PREVIOUS RESULT segment
+        const prevSegment = result[i - 1]; // Use the previously processed segment from result
         const prevStartTime = toMinutes(prevSegment.time);
         const prevDuration = parseInt(String(prevSegment.duration).replace(/[^0-9]/g, ''), 10) || 0;
         const newStartTime = prevStartTime + prevDuration;
@@ -67,9 +70,11 @@ const recalculateTimes = (schedule, mode = 'cascade', editedIndex = null) => {
         
         console.log(`Segment ${i}: recalculating from ${prevSegment.time} + ${prevDuration}min = ${newTimeStr}`);
         
-        return { ...seg, time: newTimeStr, duration: `${duration} min` };
+        result.push({ ...seg, time: newTimeStr, duration: `${duration} min` });
       }
-    });
+    }
+    
+    return result;
   }
 
   // --- LOGIC FOR 'cascade' MODE (Your existing, preferred logic for edits) ---

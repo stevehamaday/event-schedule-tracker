@@ -1329,3 +1329,87 @@ body.dark {
   background: #404040;
   border-color: #0078d4;
 }
+
+/* === MICROSOFT YELLOW - ACTIVE TIME HIGHLIGHTING === */
+.current-segment {
+  background: linear-gradient(90deg, #FFB900 0%, #fff5b8 100%) !important;
+  border-left: 4px solid #FFB900 !important;
+  box-shadow: 0 0 0 2px rgba(255, 185, 0, 0.3) !important;
+  color: #323130 !important;
+  font-weight: bold;
+}
+
+.current-segment td {
+  background: transparent !important;
+  color: #323130 !important;
+}
+
+.showflow-current-pulse {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: #FFB900;
+  border-radius: 50%;
+  animation: yellowPulse 2s infinite;
+  box-shadow: 0 0 0 2px rgba(255, 185, 0, 0.4);
+}
+
+@keyframes yellowPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 185, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+    box-shadow: 0 0 0 6px rgba(255, 185, 0, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 185, 0, 0);
+  }
+}
+
+/* Next segment subtle indicator */
+.next-segment {
+  border-left: 2px solid #FFB900;
+  background: rgba(255, 185, 0, 0.05);
+}
+
+/* Overrun indicator with yellow warning */
+.overrun {
+  background: linear-gradient(90deg, #FFB900 0%, #ffc445 100%) !important;
+  animation: yellowPulse 1s infinite;
+  color: #323130 !important;
+  font-weight: bold;
+}
+
+.overrun td {
+  background: transparent !important;
+  color: #323130 !important;
+}
+
+/* Dark theme overrides for yellow highlighting */
+.dark .current-segment {
+  background: linear-gradient(90deg, #FFB900 0%, #332900 100%) !important;
+  color: #FFB900 !important;
+}
+
+.dark .current-segment td {
+  color: #FFB900 !important;
+}
+
+.dark .next-segment {
+  background: rgba(255, 185, 0, 0.1);
+}
+
+.dark .overrun {
+  background: linear-gradient(90deg, #FFB900 0%, #443300 100%) !important;
+  color: #FFB900 !important;
+}
+
+.dark .overrun td {
+  color: #FFB900 !important;
+}

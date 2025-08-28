@@ -1392,8 +1392,8 @@ const ShowFlowAgent = () => {
           // Desktop Footer Controls
           <footer className="showflow-footer-controls" style={{position:'fixed',bottom:0,left:0,right:0,background:'#f8fafd',borderTop:'1px solid #e0e4f7',padding:'12px 0',display:'flex',justifyContent:'center',alignItems:'center',zIndex:1000,boxShadow:'0 -2px 8px rgba(60,80,160,0.04)'}}>
             <button
-              className="showflow-btn"
-              style={{ background: '#21a366', color: '#fff', border: 'none', marginRight: 16 }}
+              className="showflow-btn success"
+              style={{ marginRight: 16 }}
               onClick={handleExportSchedule}
               title="Export schedule as CSV"
             >

@@ -5,7 +5,6 @@ import { parseScheduleFile, parseClipboardData } from '../utils/enhancedParser';
 import DataPreviewModal from './DataPreviewModal';
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
-import XLSX from 'xlsx';
 
 // Helper for drag-and-drop
 const reorder = (list, startIndex, endIndex) => {
@@ -342,22 +341,69 @@ const ShowFlowAgent = () => {
     setSchedule(recalculated);
     setSummary((prev) => [...prev, 'Parsed schedule from input and recalculated times.']);
   };
-  // Enhanced file upload handler with preview
+  // Simplified file upload handler for CSV only
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      alert('Please select a CSV file (.csv)');
+      return;
+    }
+    
     try {
-      // Use enhanced parser
-      const parseResult = await parseScheduleFile(file);
+      const text = await file.text();
+      const parseResult = parseCSVContent(text, file.name);
       
       // Show preview modal
       setPreviewData(parseResult);
       setShowPreviewModal(true);
       
     } catch (err) {
-      alert(`Failed to parse file: ${err.message}`);
+      alert(`Failed to parse CSV file: ${err.message}`);
     }
+  };
+
+  // Simple CSV parser function
+  const parseCSVContent = (csvText, fileName) => {
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) {
+      throw new Error('CSV file must have at least a header row and one data row');
+    }
+    
+    // Parse header
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+    
+    // Map headers to field names
+    const fieldMap = {};
+    headers.forEach((header, index) => {
+      if (header.includes('time') || header.includes('start')) fieldMap.time = index;
+      else if (header.includes('duration')) fieldMap.duration = index;
+      else if (header.includes('segment') || header.includes('session') || header.includes('title')) fieldMap.segment = index;
+      else if (header.includes('presenter') || header.includes('speaker') || header.includes('facilitator')) fieldMap.presenter = index;
+      else if (header.includes('note')) fieldMap.notes = index;
+    });
+    
+    // Parse data rows
+    const data = lines.slice(1).map(line => {
+      const cells = line.split(',').map(cell => cell.replace(/^"|"$/g, '').trim());
+      return {
+        time: fieldMap.time !== undefined ? cells[fieldMap.time] || '' : '',
+        duration: fieldMap.duration !== undefined ? cells[fieldMap.duration] || '' : '',
+        segment: fieldMap.segment !== undefined ? cells[fieldMap.segment] || '' : '',
+        presenter: fieldMap.presenter !== undefined ? cells[fieldMap.presenter] || '' : '',
+        notes: fieldMap.notes !== undefined ? cells[fieldMap.notes] || '' : ''
+      };
+    });
+    
+    return {
+      data: data,
+      metadata: {
+        fileName: fileName,
+        format: 'CSV',
+        rowCount: data.length
+      }
+    };
   };
 
   // Handle accepting data from preview modal
@@ -658,41 +704,30 @@ const ShowFlowAgent = () => {
     setExpandedNotesIdx(expandedNotesIdx => allNotesExpanded ? null : 'all');
   };
 
-  // Export to Excel (XLSX)
-  const handleExportSchedule = (format) => {
-    if (format === 'excel') {
-      import('xlsx').then(XLSX => {
-        const ws = XLSX.utils.json_to_sheet(schedule);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Schedule');
-        XLSX.writeFile(wb, 'showflow-schedule.xlsx');
-      });
-    } else if (format === 'csv') {
-      import('xlsx').then(XLSX => {
-        const ws = XLSX.utils.json_to_sheet(schedule);
-        const csv = XLSX.utils.sheet_to_csv(ws);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'showflow-schedule.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
-    } else if (format === 'json') {
-      const dataStr = JSON.stringify(schedule, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'showflow-schedule.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
+  // Export to CSV only
+  const handleExportSchedule = () => {
+    // Create CSV content manually (no dependencies needed)
+    const headers = ['Time', 'Duration', 'Segment', 'Presenter', 'Notes'];
+    const csvContent = [
+      headers.join(','),
+      ...schedule.map(seg => [
+        `"${seg.time || ''}"`,
+        `"${seg.duration || ''}"`,
+        `"${seg.segment || ''}"`,
+        `"${seg.presenter || ''}"`,
+        `"${(seg.notes || '').replace(/"/g, '""')}"` // Escape quotes in notes
+      ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'showflow-schedule.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Keyboard shortcuts
@@ -961,8 +996,8 @@ const ShowFlowAgent = () => {
             <div className="showflow-input-actions">
               <button className="showflow-btn primary" onClick={handleParseSchedule}>Parse Schedule</button>
               <label className="showflow-file-upload">
-                <input type="file" accept=".xlsx,.csv" onChange={handleFileUpload} />
-                <span>Upload .xlsx or .csv</span>
+                <input type="file" accept=".csv" onChange={handleFileUpload} />
+                <span>Upload .csv</span>
               </label>
             </div>
           </section>          {/* Schedule Table Display */}
@@ -1360,24 +1395,14 @@ const ShowFlowAgent = () => {
         ) : (
           // Desktop Footer Controls
           <footer className="showflow-footer-controls" style={{position:'fixed',bottom:0,left:0,right:0,background:'#f8fafd',borderTop:'1px solid #e0e4f7',padding:'12px 0',display:'flex',justifyContent:'center',alignItems:'center',zIndex:1000,boxShadow:'0 -2px 8px rgba(60,80,160,0.04)'}}>
-            <div style={{ position: 'relative', marginRight: 16 }}>
-              <button
-                className="showflow-btn"
-                style={{ background: '#21a366', color: '#fff', border: 'none', paddingRight: 24 }}
-                onClick={e => {
-                  const menu = document.getElementById('export-dropdown');
-                  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                }}
-                title="Export schedule"
-              >
-                Export ▼
-              </button>
-              <div id="export-dropdown" style={{ display: 'none', position: 'absolute', left: 0, bottom: '110%', background: '#fff', border: '1px solid #ccc', zIndex: 1001, minWidth: 120, boxShadow: '0 4px 16px rgba(60,80,160,0.10)', padding: '8px 0', borderRadius: 6 }}>
-                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#21a366', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('excel'); document.getElementById('export-dropdown').style.display = 'none'; }}>Excel (.xlsx)</button>
-                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#217346', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('csv'); document.getElementById('export-dropdown').style.display = 'none'; }}>CSV (.csv)</button>
-                <button className="showflow-btn" style={{ width: '100%', textAlign: 'left', color: '#444', background: 'none', border: 'none', padding: '8px 16px' }} onClick={() => { handleExportSchedule('json'); document.getElementById('export-dropdown').style.display = 'none'; }}>JSON (.json)</button>
-              </div>
-            </div>
+            <button
+              className="showflow-btn"
+              style={{ background: '#21a366', color: '#fff', border: 'none', marginRight: 16 }}
+              onClick={handleExportSchedule}
+              title="Export schedule as CSV"
+            >
+              Export CSV
+            </button>
             <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{marginRight:16}}>Undo</button>
             <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{marginRight:16}}>Redo</button>
             <button className="showflow-btn danger" onClick={handleResetAll} style={{marginRight:24}}>Reset All</button>

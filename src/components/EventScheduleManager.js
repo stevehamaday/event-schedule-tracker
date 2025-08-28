@@ -44,23 +44,30 @@ const recalculateTimes = (schedule, mode = 'cascade', editedIndex = null) => {
 
   // --- LOGIC FOR 'smart-edit' MODE (For intelligent time edits that preserve context) ---
   if (mode === 'smart-edit' && editedIndex !== null) {
+    console.log('Smart-edit mode triggered:', { editedIndex, schedule });
+    
     return schedule.map((seg, i) => {
       const duration = parseInt(String(seg.duration).replace(/[^0-9]/g, ''), 10) || 0;
       
       if (i < editedIndex) {
         // Keep segments before the edited one unchanged
+        console.log(`Segment ${i}: keeping unchanged`);
         return { ...seg, duration: `${duration} min` };
       } else if (i === editedIndex) {
-        // This is the edited segment - use its new time
+        // This is the edited segment - keep its new time and duration
+        console.log(`Segment ${i}: edited segment, time: ${seg.time}`);
         return { ...seg, duration: `${duration} min` };
       } else {
-        // Recalculate segments after the edited one
+        // Recalculate segments after the edited one based on the previous segment
         const prevSegment = schedule[i - 1];
         const prevStartTime = toMinutes(prevSegment.time);
         const prevDuration = parseInt(String(prevSegment.duration).replace(/[^0-9]/g, ''), 10) || 0;
         const newStartTime = prevStartTime + prevDuration;
+        const newTimeStr = toTimeStr(newStartTime);
         
-        return { ...seg, time: toTimeStr(newStartTime), duration: `${duration} min` };
+        console.log(`Segment ${i}: recalculating from ${prevSegment.time} + ${prevDuration}min = ${newTimeStr}`);
+        
+        return { ...seg, time: newTimeStr, duration: `${duration} min` };
       }
     });
   }
@@ -384,10 +391,22 @@ const ShowFlowAgent = () => {
     // Determine if the time field was edited
     const timeWasEdited = originalEditValues.time !== editValues.time;
     
+    // Debug logging
+    console.log('Save Edit Debug:', {
+      idx,
+      originalTime: originalEditValues.time,
+      newTime: editValues.time,
+      timeWasEdited,
+      editValues,
+      originalEditValues
+    });
+    
     // Use smart-edit mode if time was changed, otherwise use cascade mode
     const recalculated = timeWasEdited 
       ? recalculateTimes(updated, 'smart-edit', idx)
       : recalculateTimes(updated, 'cascade');
+    
+    console.log('Recalculation result:', { mode: timeWasEdited ? 'smart-edit' : 'cascade', recalculated });
     
     setSchedule(recalculated);
     setEditIdx(null);

@@ -739,6 +739,26 @@ body {
   border-color: #0078d4;
 }
 
+.light .showflow-btn.success {
+  background: #7FBA00;
+  border-color: #7FBA00;
+}
+
+.light .showflow-btn.success:hover {
+  background: #6a9a00;
+  border-color: #6a9a00;
+}
+
+.light .showflow-btn.danger {
+  background: #F25022 !important;
+  border-color: #F25022 !important;
+}
+
+.light .showflow-btn.danger:hover {
+  background: #d13300 !important;
+  border-color: #d13300 !important;
+}
+
 /* === DARK THEME OVERRIDES === */
 body.dark {
   background: #1a1a1a;
@@ -771,6 +791,28 @@ body.dark {
 .dark .showflow-btn:hover {
   background: #106ebe;
   border-color: #106ebe;
+}
+
+.dark .showflow-btn.success {
+  background: #7FBA00;
+  border-color: #7FBA00;
+  color: white;
+}
+
+.dark .showflow-btn.success:hover {
+  background: #6a9a00;
+  border-color: #6a9a00;
+}
+
+.dark .showflow-btn.danger {
+  background: #F25022 !important;
+  border-color: #F25022 !important;
+  color: white !important;
+}
+
+.dark .showflow-btn.danger:hover {
+  background: #d13300 !important;
+  border-color: #d13300 !important;
 }
 
 .dark .time-cell {

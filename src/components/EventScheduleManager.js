@@ -1135,7 +1135,7 @@ const ShowFlowAgent = () => {
                                 <button className="showflow-btn success" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
                               </td>                              {/* Add segment after */}
                               <td>
-                                <button className={`showflow-btn success ${schedule.length <= 2 ? 'primary' : ''}`} title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} style={{
+                                <button className={`showflow-btn success`} title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} style={{
                                     ...(schedule.length === 1 && i === 0 ? {
                                       background: '#22c55e',
                                       color: 'white',

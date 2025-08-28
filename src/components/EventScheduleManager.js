@@ -379,8 +379,8 @@ const ShowFlowAgent = () => {
   // Start editing a row
   const handleEdit = (idx) => {
     setEditIdx(idx);
-    setEditValues(schedule[idx]);
-    setOriginalEditValues(schedule[idx]); // Store original values for comparison
+    setEditValues({ ...schedule[idx] }); // Create a copy
+    setOriginalEditValues({ ...schedule[idx] }); // Store original values for comparison with a separate copy
   };
 
   // Save edits

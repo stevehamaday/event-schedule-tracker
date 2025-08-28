@@ -740,6 +740,7 @@ const ShowFlowAgent = () => {
       }
       if (e.key === '?') { e.preventDefault(); setShowShortcuts(true); }
       if (e.key === 'F3') { e.preventDefault(); togglePresenterView(); } // F3 for Presenter View toggle
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); setShowDebug(prev => !prev); } // Hidden debug toggle
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -1335,11 +1336,6 @@ const ShowFlowAgent = () => {
               </div>
             </section>
           )}
-          {!showDebug && (
-            <div style={{textAlign:'right',margin:'16px 0'}}>
-              <button className="showflow-btn" onClick={() => setShowDebug(true)}>Show Debug/Settings</button>
-            </div>
-          )}
         </main>
         {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}
         {!presenterViewMode && (
@@ -1521,6 +1517,10 @@ const ShowFlowAgent = () => {
                 <div className="showflow-shortcut-item">
                   <div className="showflow-shortcut-key">Ctrl + P</div>
                   <div className="showflow-shortcut-desc">Print schedule</div>
+                </div>
+                <div className="showflow-shortcut-item">
+                  <div className="showflow-shortcut-key">Ctrl + Shift + D</div>
+                  <div className="showflow-shortcut-desc">Toggle debug settings (hidden)</div>
                 </div>
               </div>
             </div>

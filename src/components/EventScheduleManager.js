@@ -967,7 +967,7 @@ const ShowFlowAgent = () => {
                 href="https://aka.ms/showflowtrackertemplate" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="showflow-btn template-button"
+                className="showflow-btn success template-button"
                 style={{
                   textDecoration: 'none',
                   display: 'inline-block',
@@ -995,7 +995,7 @@ const ShowFlowAgent = () => {
               }}
             />
             <div className="showflow-input-actions">
-              <button className="showflow-btn primary" onClick={handleParseSchedule}>Parse Schedule</button>
+              <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
               <label className="showflow-file-upload">
                 <input type="file" accept=".csv" onChange={handleFileUpload} />
                 <span>Upload .csv</span>
@@ -1008,8 +1008,8 @@ const ShowFlowAgent = () => {
                   <p style={{fontSize:'1.08em',marginBottom:16}}>
                     You can build your schedule here by adding segments.<br />
                     <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
-                  </p>                <button
-                    className="showflow-btn primary"
+                  </p>                  <button
+                    className="showflow-btn success"
                     style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
                     onClick={() => handleAddSegment(0)}
                   >
@@ -1120,7 +1120,7 @@ const ShowFlowAgent = () => {
                               </td>
                               {/* Save/Cancel buttons */}
                               <td colSpan={5} style={{minWidth:120}}>
-                                <button className="showflow-btn primary" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }}>Save</button>
+                                <button className="showflow-btn success" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }}>Save</button>
                                 <button className="showflow-btn" onClick={e => { e.stopPropagation(); handleCancelEdit(); }} style={{marginLeft:8}}>Cancel</button>
                               </td>
                             </>
@@ -1132,10 +1132,10 @@ const ShowFlowAgent = () => {
                               <td>{seg.presenter}</td>
                               {/* Duplicate button */}
                               <td>
-                                <button className="showflow-btn" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
+                                <button className="showflow-btn success" title="Duplicate segment" onClick={e => { e.stopPropagation(); handleDuplicateSegment(i); }}>⧉</button>
                               </td>                              {/* Add segment after */}
                               <td>
-                                <button className={`showflow-btn ${schedule.length <= 2 ? 'primary' : ''}`} title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} style={{
+                                <button className={`showflow-btn success ${schedule.length <= 2 ? 'primary' : ''}`} title="Add segment after" onClick={e => { e.stopPropagation(); handleAddSegment(i + 1); }} style={{
                                     ...(schedule.length === 1 && i === 0 ? {
                                       background: '#22c55e',
                                       color: 'white',
@@ -1217,7 +1217,7 @@ const ShowFlowAgent = () => {
                   
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
                     <button
-                      className="showflow-btn primary"
+                      className="showflow-btn success"
                       onClick={() => handleAddSegment(schedule.length)}
                       style={{ fontSize: '0.9em', padding: '8px 16px' }}
                     >
@@ -1225,7 +1225,7 @@ const ShowFlowAgent = () => {
                     </button>
                     
                     <button
-                      className="showflow-btn"
+                      className="showflow-btn success"
                       onClick={() => handleAddSegment(0)}
                       style={{ fontSize: '0.9em', padding: '8px 16px' }}
                     >
@@ -1234,7 +1234,7 @@ const ShowFlowAgent = () => {
 
                     {schedule.length > 1 && (
                       <button
-                        className="showflow-btn"
+                        className="showflow-btn success"
                         onClick={() => handleAddSegment(Math.floor(schedule.length / 2))}
                         style={{ fontSize: '0.9em', padding: '8px 16px' }}
                       >

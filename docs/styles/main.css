@@ -546,13 +546,13 @@ body.dark, .showflow-root.dark {
     position: fixed;
     top: 0; left: 0; right: 0;
     height: 54px;
-    background: #232a5c;
+    background: #F25022;
     color: #fff;
     z-index: 1001;
     align-items: center;
     justify-content: center; /* Center the logo */
     padding: 0 16px;
-    box-shadow: 0 2px 8px rgba(35,42,92,0.13);
+    box-shadow: 0 2px 8px rgba(242,80,34,0.13);
     box-sizing: border-box;
   }
   .showflow-mobile-nav .showflow-logo {
@@ -595,10 +595,10 @@ body.dark, .showflow-root.dark {
     bottom: 18px;
     width: 60px;
     height: 60px;
-    background: #3bb273;
+    background: #7FBA00;
     color: #fff;
     border-radius: 50%;
-    box-shadow: 0 4px 18px rgba(35,42,92,0.18);
+    box-shadow: 0 4px 18px rgba(127,186,0,0.18);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -609,7 +609,7 @@ body.dark, .showflow-root.dark {
     transition: background 0.2s;
   }
   .showflow-fab:active {
-    background: #2e8c5a;
+    background: #6a9a00;
   }
   /* Hide non-essential elements for mobile */
   .showflow-footer {
@@ -1144,125 +1144,188 @@ tr.next-segment td, tr.next-segment input, tr.next-segment button {
   outline: 2px solid #ffb300;
 }
 
-/* === MICROSOFT THEME === */
-body.microsoft {
+/* === DEFAULT MICROSOFT THEME === */
+body {
   background: #ffffff;
   color: #323130;
 }
 
-.microsoft .showflow-root {
+.showflow-root {
   background: #ffffff;
   color: #323130;
 }
 
-/* Microsoft color palette:
+/* Microsoft color palette as default:
    #F25022 (red-orange)
    #7FBA00 (green) 
    #00A4EF (blue)
    #FFB900 (yellow)
 */
 
-.microsoft .showflow-navbar {
+.showflow-navbar {
   background: #F25022;
   color: white;
 }
 
-.microsoft .showflow-card,
-.microsoft .showflow-ai-card {
+.showflow-card,
+.showflow-ai-card {
   background: #ffffff;
   border: 1px solid #edebe9;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   color: #323130;
 }
 
-.microsoft .showflow-btn {
+.showflow-btn {
   background: #00A4EF;
   color: white;
   border: 1px solid #00A4EF;
 }
 
-.microsoft .showflow-btn:hover {
+.showflow-btn:hover {
   background: #0078d4;
   border-color: #0078d4;
 }
 
-.microsoft .showflow-btn.danger {
+.showflow-btn.danger {
   background: #F25022;
   border-color: #F25022;
   color: white;
 }
 
-.microsoft .showflow-btn.danger:hover {
+.showflow-btn.danger:hover {
   background: #d13300;
   border-color: #d13300;
 }
 
-.microsoft .showflow-btn.success {
+.showflow-btn.success {
   background: #7FBA00;
   color: white;
   border-color: #7FBA00;
 }
 
-.microsoft .showflow-btn.success:hover {
+.showflow-btn.success:hover {
   background: #6a9a00;
   border-color: #6a9a00;
 }
 
-.microsoft .status-running {
+.status-running {
   background: #7FBA00;
   color: white;
 }
 
-.microsoft .status-upcoming {
+.status-upcoming {
   background: #FFB900;
   color: #323130;
 }
 
-.microsoft .status-completed {
+.status-completed {
   background: #6c757d;
   color: white;
 }
 
-.microsoft .time-cell {
+.time-cell {
   border: 1px solid #edebe9;
 }
 
-.microsoft .time-cell:focus {
+.time-cell:focus {
   border-color: #00A4EF;
   outline: none;
   box-shadow: 0 0 0 2px rgba(0, 164, 239, 0.2);
 }
 
-.microsoft .event-list-item {
+.event-list-item {
   border: 1px solid #edebe9;
   background: #ffffff;
 }
 
-.microsoft .event-list-item:hover {
+.event-list-item:hover {
   background: #faf9f8;
   border-color: #00A4EF;
 }
 
-.microsoft .presenter-header {
+.presenter-header {
   background: linear-gradient(135deg, #F25022 0%, #00A4EF 100%);
   color: white;
 }
 
-.microsoft .time-display {
+.time-display {
   color: #FFB900;
 }
 
-/* Mobile nav overrides for Microsoft theme */
-.microsoft .mobile-nav-overlay {
-  background: #F25022 !important;
+/* Template button with Microsoft green */
+.template-button {
+  background: #7FBA00 !important;
+  color: white !important;
+  border-color: #7FBA00 !important;
 }
 
-.microsoft .mobile-nav-button {
+.template-button:hover {
+  background: #6a9a00 !important;
+  border-color: #6a9a00 !important;
+}
+
+/* === LIGHT THEME OVERRIDES === */
+.light .showflow-navbar {
+  background: #F25022;
+}
+
+.light .showflow-btn {
   background: #00A4EF;
   border-color: #00A4EF;
 }
 
-.microsoft .mobile-nav-button:hover {
+.light .showflow-btn:hover {
   background: #0078d4;
+  border-color: #0078d4;
+}
+
+/* === DARK THEME OVERRIDES === */
+body.dark {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.dark .showflow-root {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.dark .showflow-navbar {
+  background: #2d2d2d;
+  color: white;
+}
+
+.dark .showflow-card,
+.dark .showflow-ai-card {
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  color: #e0e0e0;
+}
+
+.dark .showflow-btn {
+  background: #0078d4;
+  color: white;
+  border: 1px solid #0078d4;
+}
+
+.dark .showflow-btn:hover {
+  background: #106ebe;
+  border-color: #106ebe;
+}
+
+.dark .time-cell {
+  border: 1px solid #404040;
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+.dark .event-list-item {
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  color: #e0e0e0;
+}
+
+.dark .event-list-item:hover {
+  background: #404040;
   border-color: #0078d4;
 }

@@ -712,7 +712,7 @@ body {
   color: #FFB900;
 }
 
-/* Template button with Microsoft green */
+/* Template button with Microsoft green (positive/helpful action) */
 .template-button {
   background: #7FBA00 !important;
   color: white !important;

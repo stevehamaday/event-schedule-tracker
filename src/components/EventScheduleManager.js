@@ -39,7 +39,9 @@ const recalculateTimes = (schedule, mode = 'cascade', editedIndex = null) => {
     let ampm = hours >= 12 ? 'PM' : 'AM';
     let displayHours = hours % 12;
     if (displayHours === 0) displayHours = 12;
-    return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    const result = `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    console.log(`toTimeStr(${mins}) -> hours: ${hours}, displayHours: ${displayHours}, minutes: ${minutes}, ampm: ${ampm}, result: ${result}`);
+    return result;
   };
 
   // --- LOGIC FOR 'smart-edit' MODE (For intelligent time edits that preserve context) ---
@@ -69,6 +71,10 @@ const recalculateTimes = (schedule, mode = 'cascade', editedIndex = null) => {
         const newTimeStr = toTimeStr(newStartTime);
         
         console.log(`Segment ${i}: recalculating from ${prevSegment.time} + ${prevDuration}min = ${newTimeStr}`);
+        console.log(`  - prevStartTime (minutes): ${prevStartTime}`);
+        console.log(`  - prevDuration: ${prevDuration}`);
+        console.log(`  - newStartTime (minutes): ${newStartTime}`);
+        console.log(`  - newTimeStr: ${newTimeStr}`);
         
         result.push({ ...seg, time: newTimeStr, duration: `${duration} min` });
       }

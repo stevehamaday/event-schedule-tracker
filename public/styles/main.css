@@ -301,13 +301,13 @@ body {
   align-items: stretch;
   justify-content: center;
   min-height: calc(100vh - 220px);
-  background: linear-gradient(135deg, #232a5c 0%, #3c4e8a 100%);
+  background: linear-gradient(135deg, #F25022 0%, #00A4EF 100%);
   color: white;
   padding: 2rem;
   border-radius: 8px;
   margin: 80px auto 40px auto;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(35, 42, 92, 0.3);
+  box-shadow: 0 8px 32px rgba(242, 80, 34, 0.3);
   gap: 3rem;
   max-width: 85vw;
   width: 85vw;
@@ -647,14 +647,14 @@ body {
 }
 
 .showflow-btn.danger {
-  background: #F25022;
-  border-color: #F25022;
-  color: white;
+  background: #F25022 !important;
+  border-color: #F25022 !important;
+  color: white !important;
 }
 
 .showflow-btn.danger:hover {
-  background: #d13300;
-  border-color: #d13300;
+  background: #d13300 !important;
+  border-color: #d13300 !important;
 }
 
 .showflow-btn.success {

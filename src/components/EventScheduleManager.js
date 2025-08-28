@@ -832,7 +832,7 @@ const ShowFlowAgent = () => {
         )}
         {/* Mobile nav drawer (simple) */}
         {isMobileDevice && mobileNavOpen && (
-          <div style={{position:'fixed',top:54,left:0,right:0,background:'#232a5c',color:'#fff',zIndex:1002,padding:'18px 0',textAlign:'center'}}>
+          <div style={{position:'fixed',top:54,left:0,right:0,background:'#F25022',color:'#fff',zIndex:1002,padding:'18px 0',textAlign:'center'}}>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={() => setMobileNavOpen(false)}>Close Menu</button>
             <button className="showflow-btn" style={{width:'90%',margin:'8px 0'}} onClick={toggleTheme}>
               {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
@@ -941,7 +941,7 @@ const ShowFlowAgent = () => {
         <main className="showflow-main" style={{ display: presenterViewMode ? 'none' : 'block' }}>
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
-            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#232a5c' } : {}}>
+            <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#FFB900', color: '#323130' } : {}}>
               <span className="showflow-current-pulse" />
               <strong>Now:</strong> {schedule[currentIdx].segment}
               <span style={{ marginLeft: 8 }}>{schedule[currentIdx].time}</span>
@@ -1070,7 +1070,7 @@ const ShowFlowAgent = () => {
                                     onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
                                     tabIndex={0}
                                   >
-                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#232a5c':'#bbb'}}>
+                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#00A4EF':'#bbb'}}>
                                       {alertSegments.includes(i) ? '🔔' : '🔕'}
                                     </span>
                                   </button>                                )}

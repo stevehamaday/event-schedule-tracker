@@ -850,12 +850,32 @@ body.dark {
   display: inline-block;
   width: 12px;
   height: 12px;
-  background: #FFB900;
+  background: #F25022;
   border-radius: 50%;
-  animation: yellowPulse 2s infinite;
-  box-shadow: 0 0 0 2px rgba(255, 185, 0, 0.4);
+  animation: livePulse 1.5s infinite;
+  box-shadow: 0 0 0 2px rgba(242, 80, 34, 0.4);
 }
 
+/* Live tracking pulse animation with Microsoft Red */
+@keyframes livePulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(242, 80, 34, 0.8);
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.9;
+    box-shadow: 0 0 0 8px rgba(242, 80, 34, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(242, 80, 34, 0);
+  }
+}
+
+/* Yellow pulse for overrun/warning states */
 @keyframes yellowPulse {
   0% {
     transform: scale(1);

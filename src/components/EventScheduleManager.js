@@ -2831,18 +2831,29 @@ const ShowFlowAgent = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            background: '#f8fafd',
-            borderTop: '1px solid #e0e4f7',
+            background: 'rgba(255,255,255,0.95)',
+            borderTop: '2px solid rgba(108,123,189,0.3)',
             padding: 0,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 1000,
-            boxShadow: '0 -2px 8px rgba(0,0,0,0.04)'
+            boxShadow: '0 -4px 12px rgba(0,0,0,0.15)',
+            backdropFilter: 'blur(10px)'
           }}>
             <button
               className="showflow-btn"
-              style={{ width: '100%', fontSize: '1.2em', padding: '16px 0', borderRadius: 0, background: 'none', border: 'none', textAlign: 'center' }}
+              style={{ 
+                width: '100%', 
+                fontSize: '1.2em', 
+                fontWeight: '600',
+                padding: '16px 0', 
+                borderRadius: 0, 
+                background: 'none', 
+                border: 'none', 
+                textAlign: 'center',
+                color: '#6c7bbd'
+              }}
               onClick={() => setMobileFooterMenuOpen(v => !v)}
               aria-label="Show controls"
             >
@@ -2865,8 +2876,8 @@ const ShowFlowAgent = () => {
                 <button className="showflow-btn" onClick={toggleTheme} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>
                   {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
                 </button>
-                <button className="showflow-btn" onClick={togglePresenterView} style={{ width: '100%', margin: '8px 0', display: 'block', backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : '', boxSizing: 'border-box' }}>
-                  {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
+                <button className="showflow-btn" onClick={() => setShowMobileEdit(true)} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>
+                  ⚙️ Edit Mode
                 </button>
                 <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Undo</button>
                 <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Redo</button>

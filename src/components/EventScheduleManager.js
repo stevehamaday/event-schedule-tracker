@@ -1176,21 +1176,21 @@ const ShowFlowAgent = () => {
   return (
     <MobileErrorBoundary>
       <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>
-        {/* Mobile Nav - Clean logo banner only */}
+        {/* Mobile Nav - Logo header matching desktop style */}
         {isMobileDevice && (
-          <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
-            <div style={{ height: 'auto', textAlign: 'center', padding: '12px 0' }}>
+          <header className="logo-only-header" style={{position:'relative',zIndex:1100}}>
+            <div className="logo-header-content" style={{ padding: '24px 0 12px 0' }}>
               <img
                 src={theme === 'dark' ? 'styles/showflowlogov3_dark.png' : 'styles/showflow-logo-new.png'}
                 alt="Show Flow Agent Logo"
+                className="prominent-logo"
                 style={{ 
-                  height: '32px', 
-                  maxWidth: '200px', 
-                  objectFit: 'contain'
+                  width: '150px',
+                  maxWidth: '80vw'
                 }}
               />
             </div>
-          </nav>
+          </header>
         )}
         {/* Mobile nav drawer (simple) */}
         {isMobileDevice && mobileNavOpen && (
@@ -1326,9 +1326,6 @@ const ShowFlowAgent = () => {
           )}          {/* Schedule Input Section */}
           <section className="showflow-card">
             <h2>Import or Paste Schedule</h2>
-            <p style={{fontSize: '0.85em', color: '#666', marginTop: '-8px', marginBottom: 16}}>
-              <em>Single-day events only • Multi-day support coming soon</em>
-            </p>
             <p style={{marginBottom: 16}}>
               <a 
                 href="https://aka.ms/showflowtrackertemplate" 

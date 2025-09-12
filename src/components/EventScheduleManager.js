@@ -210,7 +210,7 @@ const ShowFlowAgent = () => {
   // New: Debug/settings pane visibility
   const [showDebug, setShowDebug] = useState(false);
   
-  // New: Presenter View toggle
+  // New: Presenter View toggle (auto-enable on mobile)
   const [presenterViewMode, setPresenterViewMode] = useState(false);
 
   // Debug: set now to a custom date/time
@@ -1168,11 +1168,18 @@ const ShowFlowAgent = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileFooterMenuOpen, setMobileFooterMenuOpen] = useState(false); // <<< ADD THIS LINE
   useEffect(() => {
-    const checkMobile = () => setIsMobileDevice(isMobile());
+    const checkMobile = () => {
+      const isMobileNow = isMobile();
+      setIsMobileDevice(isMobileNow);
+      // Auto-enable presenter view on mobile devices
+      if (isMobileNow && !presenterViewMode) {
+        setPresenterViewMode(true);
+      }
+    };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [presenterViewMode]);
   return (
     <MobileErrorBoundary>
       <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>

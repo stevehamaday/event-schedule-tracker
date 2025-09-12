@@ -113,3 +113,76 @@
   right: 2vw;
   z-index: 1001;
 }
+
+/* Mobile-responsive presenter view */
+@media (max-width: 768px) {
+  .showflow-presenter-view {
+    padding: 1rem;
+    justify-content: flex-start;
+  }
+  
+  .showflow-presenter-current {
+    max-height: none;
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+  
+  .showflow-presenter-title {
+    font-size: 2rem;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+  }
+  
+  .showflow-presenter-time {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .showflow-presenter-presenter {
+    font-size: 1.1rem;
+  }
+  
+  .showflow-presenter-timer {
+    font-size: 1.8rem;
+    margin-top: 0.5rem;
+  }
+  
+  .showflow-presenter-timer-icon {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+  }
+  
+  .showflow-presenter-timer-text {
+    font-size: 1.4rem;
+  }
+  
+  .showflow-presenter-next {
+    padding: 1rem 0;
+    margin-top: 1rem;
+  }
+  
+  .showflow-presenter-next-title {
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .showflow-presenter-next-time {
+    font-size: 1.1rem;
+  }
+  
+  .showflow-presenter-controls {
+    position: relative;
+    bottom: auto;
+    right: auto;
+    margin-top: 1rem;
+    text-align: center;
+  }
+  
+  .showflow-presenter-empty h1 {
+    font-size: 2rem;
+  }
+  
+  .showflow-presenter-overrun {
+    font-size: 1.2rem;
+  }
+}

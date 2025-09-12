@@ -212,7 +212,6 @@ const ShowFlowAgent = () => {
   
   // New: Presenter View toggle
   const [presenterViewMode, setPresenterViewMode] = useState(false);
-  const [showMobileEdit, setShowMobileEdit] = useState(false);
 
   // Debug: set now to a custom date/time
   const [debugNow, setDebugNow] = useState(null);
@@ -1095,93 +1094,6 @@ const ShowFlowAgent = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Show event selector with radio buttons
-  const showEventSelector = () => {
-    if (sharedEvents.length === 0) {
-      alert('No saved events available. Create one in Edit Mode first.');
-      return;
-    }
-
-    // Create a modal-like dialog content
-    const eventOptions = sharedEvents.map((event, index) => 
-      `<label style="display: block; margin: 8px 0; padding: 12px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
-        <input type="radio" name="eventChoice" value="${index}" style="margin-right: 8px;"> 
-        <strong>${event.name}</strong>
-        ${event.metadata ? `<br><small>Created: ${new Date(event.metadata.createdAt).toLocaleDateString()}</small>` : ''}
-      </label>`
-    ).join('');
-
-    const dialogHTML = `
-      <div style="font-family: system-ui; max-width: 400px;">
-        <h3 style="margin-top: 0;">Select Event</h3>
-        <form id="eventForm">
-          ${eventOptions}
-          <div style="margin: 16px 0; padding: 12px; background: #fff3cd; border-radius: 4px;">
-            <label style="display: block; cursor: pointer;">
-              <input type="radio" name="eventChoice" value="reset" style="margin-right: 8px;"> 
-              <strong>🗑️ Reset All (Clear Current Event)</strong>
-            </label>
-          </div>
-          <div style="margin-top: 16px; text-align: right;">
-            <button type="button" onclick="document.getElementById('eventDialog').style.display='none'" 
-                    style="margin-right: 8px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
-              Cancel
-            </button>
-            <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-              Select
-            </button>
-          </div>
-        </form>
-      </div>
-    `;
-
-    // Create and show dialog
-    const dialog = document.createElement('div');
-    dialog.id = 'eventDialog';
-    dialog.style.cssText = `
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-      background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; 
-      z-index: 2000; padding: 20px; box-sizing: border-box;
-    `;
-    
-    const content = document.createElement('div');
-    content.style.cssText = `
-      background: white; padding: 24px; border-radius: 8px; 
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;
-    `;
-    content.innerHTML = dialogHTML;
-    
-    dialog.appendChild(content);
-    document.body.appendChild(dialog);
-
-    // Handle form submission
-    document.getElementById('eventForm').onsubmit = (e) => {
-      e.preventDefault();
-      const selected = document.querySelector('input[name="eventChoice"]:checked');
-      if (selected) {
-        if (selected.value === 'reset') {
-          // Reset all - clear current event
-          setCurrentSharedEventId(null);
-          setSchedule([]);
-          setSummary([]);
-          setCurrentIdx(null);
-          pushHistory([]);
-        } else {
-          const index = parseInt(selected.value);
-          loadSharedEvent(sharedEvents[index].id);
-        }
-      }
-      document.body.removeChild(dialog);
-    };
-
-    // Close on background click
-    dialog.onclick = (e) => {
-      if (e.target === dialog) {
-        document.body.removeChild(dialog);
-      }
-    };
-  };
-
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
@@ -1393,752 +1305,12 @@ const ShowFlowAgent = () => {
             </div>
         )}
 
-        {/* Mobile: Default to Mobile Presenter View */}
-        {isMobileDevice && !showMobileEdit ? (
-          <main className="showflow-mobile-presenter" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #6c7bbd 0%, #8a9dc9 100%)',
-            color: 'white',
-            padding: '20px 16px',
-            boxSizing: 'border-box'
-          }}>
-            {/* Mobile Presenter Header */}
-            <div style={{
-              textAlign: 'center',
-              marginBottom: '32px'
-            }}>
-              <h1 style={{
-                fontSize: '1.5em',
-                margin: 0,
-                fontWeight: '600',
-                textShadow: '0 1px 2px rgba(0,0,0,0.2)'
-              }}>
-                Event Tracker
-              </h1>
-              {/* Only keep the smart Load/Change Event button */}
-            </div>
-
-            {schedule.length === 0 ? (
-              // Empty state for mobile presenter
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                gap: '24px'
-              }}>
-                <div style={{fontSize: '4em', opacity: '0.8'}}>📅</div>
-                <div>
-                  <h2 style={{fontSize: '1.8em', marginBottom: '16px'}}>No Schedule Loaded</h2>
-                  <p style={{fontSize: '1.1em', opacity: '0.9', marginBottom: '24px', lineHeight: '1.4'}}>
-                    Load a shared event to start tracking
-                  </p>
-                  <button 
-                    className="showflow-btn success"
-                    style={{
-                      background: 'rgba(255,255,255,0.9)',
-                      color: '#6c7bbd',
-                      padding: '16px 32px',
-                      fontSize: '1.1em',
-                      fontWeight: '600',
-                      border: 'none',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
-                    onClick={() => showEventSelector()}
-                  >
-                    📂 Load an Event
-                  </button>
-                </div>
-              </div>
-            ) : (
-              // Mobile presenter content
-              <div style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
-                {/* Current Segment Display */}
-                {currentIdx !== null && schedule[currentIdx] ? (
-                  <div style={{
-                    background: 'rgba(255,255,255,0.15)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    marginBottom: '24px',
-                    textAlign: 'center',
-                    border: '2px solid rgba(255,255,255,0.2)'
-                  }}>
-                    <div style={{fontSize: '0.9em', opacity: '0.8', marginBottom: '8px'}}>
-                      NOW PLAYING
-                    </div>
-                    <h2 style={{
-                      fontSize: '1.6em',
-                      margin: '0 0 12px 0',
-                      fontWeight: '600',
-                      lineHeight: '1.2'
-                    }}>
-                      {schedule[currentIdx].segment}
-                    </h2>
-                    {schedule[currentIdx].presenter && (
-                      <div style={{fontSize: '1.1em', opacity: '0.9', marginBottom: '16px'}}>
-                        👤 {schedule[currentIdx].presenter}
-                      </div>
-                    )}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '16px',
-                      flexWrap: 'wrap'
-                    }}>
-                      <div style={{
-                        background: 'rgba(255,255,255,0.2)',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        fontSize: '1em'
-                      }}>
-                        🕐 {schedule[currentIdx].time}
-                      </div>
-                      <div style={{
-                        background: segmentTimer <= 120 ? 'rgba(255,79,79,0.3)' : 'rgba(255,255,255,0.2)',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        fontSize: '1em',
-                        fontWeight: '600'
-                      }}>
-                        ⏳ {Math.floor(segmentTimer / 60)}:{(segmentTimer % 60).toString().padStart(2, '0')} left
-                      </div>
-                    </div>
-                    {overrunIdx === currentIdx && (
-                      <div style={{
-                        marginTop: '12px',
-                        background: 'rgba(255,79,79,0.4)',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        fontSize: '0.9em',
-                        fontWeight: '600'
-                      }}>
-                        ⚠️ OVERRUN
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{
-                    background: 'rgba(255,255,255,0.15)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    marginBottom: '24px',
-                    textAlign: 'center',
-                    border: '2px solid rgba(255,255,255,0.2)'
-                  }}>
-                    <div style={{fontSize: '0.9em', opacity: '0.8', marginBottom: '8px'}}>
-                      EVENT STATUS
-                    </div>
-                    <h2 style={{fontSize: '1.4em', margin: 0}}>
-                      {currentIdx === null ? 'Ready to Start' : 'Event Complete'}
-                    </h2>
-                  </div>
-                )}
-
-                {/* Next Segments */}
-                {currentIdx !== null && currentIdx + 1 < schedule.length && (
-                  <div style={{marginBottom: '24px'}}>
-                    <h3 style={{
-                      fontSize: '1.1em',
-                      marginBottom: '16px',
-                      opacity: '0.9',
-                      textAlign: 'center'
-                    }}>
-                      Coming Up
-                    </h3>
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-                      {schedule.slice(currentIdx + 1, currentIdx + 3).map((seg, i) => (
-                        <div key={i} style={{
-                          background: 'rgba(255,255,255,0.1)',
-                          borderRadius: '12px',
-                          padding: '16px',
-                          border: '1px solid rgba(255,255,255,0.2)'
-                        }}>
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '4px'
-                          }}>
-                            <div style={{fontSize: '1em', fontWeight: '500'}}>
-                              {seg.segment}
-                            </div>
-                            <div style={{fontSize: '0.9em', opacity: '0.8'}}>
-                              {seg.time}
-                            </div>
-                          </div>
-                          {seg.presenter && (
-                            <div style={{fontSize: '0.9em', opacity: '0.8'}}>
-                              👤 {seg.presenter}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Smart Load/Change Event Button */}
-                <div style={{
-                  margin: '24px 0',
-                  textAlign: 'center'
-                }}>
-                  <button 
-                    className="showflow-btn"
-                    style={{
-                      background: 'rgba(255,255,255,0.9)',
-                      border: '2px solid rgba(255,255,255,0.5)',
-                      color: '#6c7bbd',
-                      padding: '12px 24px',
-                      fontSize: '1em',
-                      fontWeight: '600',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      minWidth: '160px'
-                    }}
-                    onClick={() => {
-                      // Show event selector with radio buttons
-                      showEventSelector();
-                    }}
-                  >
-                    {currentSharedEventId ? '🔄 Change Event' : '📂 Load Event'}
-                  </button>
-                </div>
-
-                {/* Quick Actions */}
-                <div style={{
-                  marginTop: 'auto',
-                  display: 'flex',
-                  gap: '12px',
-                  flexWrap: 'wrap'
-                }}>
-                  <button 
-                    className="showflow-btn"
-                    style={{
-                      flex: 1,
-                      background: 'rgba(255,255,255,0.9)',
-                      border: '2px solid rgba(255,255,255,0.5)',
-                      color: '#6c7bbd',
-                      padding: '16px',
-                      fontSize: '1em',
-                      fontWeight: '600',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
-                    onClick={() => setPresenterViewMode(true)}
-                  >
-                    📺 Full Screen
-                  </button>
-                </div>
-              </div>
-            )}
-          </main>
-        ) : (
-          <main className="showflow-main" style={{ 
-            display: presenterViewMode ? 'none' : 'block',
-            maxWidth: '100vw',
-            overflow: 'hidden',
-            boxSizing: 'border-box'
-          }}>
-            {/* Mobile Edit Mode or Desktop Layout */}
-            {isMobileDevice && showMobileEdit ? (
-              <>
-                {/* Mobile Edit Mode Header */}
-                <div style={{
-                  background: '#f8fafd',
-                  padding: '16px',
-                  marginBottom: '16px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <h2 style={{margin: 0, fontSize: '1.2em'}}>📝 Edit Mode</h2>
-                  <button 
-                    className="showflow-btn"
-                    onClick={() => setShowMobileEdit(false)}
-                    style={{padding: '8px 16px', fontSize: '0.9em'}}
-                  >
-                    ← Back to Tracker
-                  </button>
-                </div>
-
-                {/* Mobile Edit: Simplified Import Section */}
-                <section className="showflow-card">
-                  <h3>Import Schedule</h3>
-                  <textarea
-                    className="showflow-textarea"
-                    placeholder="Paste your schedule here..."
-                    rows={4}
-                    value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
-                  />
-                  <div className="showflow-input-actions" style={{marginTop:'12px'}}>
-                    <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
-                    <label className="showflow-file-upload" style={{marginLeft:'8px'}}>
-                      <input type="file" accept=".csv" onChange={handleFileUpload} />
-                      <span>Upload CSV</span>
-                    </label>
-                  </div>
-                </section>
-
-                {/* Mobile Edit: Current Schedule */}
-                <section className="showflow-card">
-                  <h3>Current Schedule</h3>
-                  {schedule.length === 0 ? (
-                    <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
-                      <p style={{fontSize:'1.08em',marginBottom:16}}>
-                        No schedule loaded yet.<br />
-                        <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Import or create one above!</span>
-                      </p>
-                      <button
-                        className="showflow-btn success"
-                        style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
-                        onClick={() => handleAddSegment(0)}
-                      >
-                        + Create Schedule
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="showflow-table-container">
-                        <table className="showflow-table">
-                          <thead>
-                            <tr>
-                              <th>Time</th>
-                              <th>Segment</th>
-                              <th></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {schedule.map((seg, i) => (
-                              <React.Fragment key={i}>
-                                <tr
-                                  className={
-                                    (i === currentIdx ? 'current-segment ' : '') +
-                                    (i === currentIdx+1 ? 'next-segment ' : '') +
-                                    (i === overrunIdx ? 'overrun' : '')
-                                  }
-                                  style={{ position: 'relative' }}
-                                >
-                                  <td style={{fontSize:'0.9em'}}>{seg.time}</td>
-                                  <td>
-                                    <div style={{fontSize:'1.0em',fontWeight:'500'}}>{seg.segment}</div>
-                                    {seg.presenter && (
-                                      <div style={{fontSize:'0.85em',color:'#666',marginTop:'2px'}}>
-                                        👤 {seg.presenter}
-                                      </div>
-                                    )}
-                                    <div style={{fontSize:'0.8em',color:'#888',marginTop:'2px'}}>
-                                      ⏱️ {seg.duration}
-                                    </div>
-                                  </td>
-                                  <td style={{textAlign:'right',width:'80px'}}>
-                                    <div style={{display:'flex',gap:'4px'}}>
-                                      <button 
-                                        className="showflow-btn" 
-                                        onClick={() => handleEdit(i)} 
-                                        style={{padding:'6px 10px',fontSize:'0.8em'}}
-                                        title="Edit segment"
-                                      >
-                                        ✏️
-                                      </button>
-                                      <button 
-                                        className="showflow-btn danger" 
-                                        onClick={() => handleRemoveSegment(i)} 
-                                        style={{padding:'6px 10px',fontSize:'0.8em'}}
-                                        title="Delete segment"
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                                {/* Mobile inline editing */}
-                                {editIdx === i && (
-                                  <tr>
-                                    <td colSpan={3} style={{background:'#f8fafd',padding:'12px'}}>
-                                      <div style={{display:'grid',gap:'8px'}}>
-                                        <input
-                                          name="time"
-                                          value={editValues.time || ''}
-                                          onChange={handleEditChange}
-                                          className="showflow-input"
-                                          placeholder="9:00 AM"
-                                          style={{width:'100%'}}
-                                        />
-                                        <input
-                                          name="segment"
-                                          value={editValues.segment || ''}
-                                          onChange={handleEditChange}
-                                          className="showflow-input"
-                                          placeholder="Session name"
-                                          style={{width:'100%'}}
-                                        />
-                                        <input
-                                          name="presenter"
-                                          value={editValues.presenter || ''}
-                                          onChange={handleEditChange}
-                                          className="showflow-input"
-                                          placeholder="Presenter"
-                                          style={{width:'100%'}}
-                                        />
-                                        <input
-                                          name="duration"
-                                          value={editValues.duration || ''}
-                                          onChange={handleEditChange}
-                                          className="showflow-input"
-                                          placeholder="30 min"
-                                          style={{width:'100%'}}
-                                        />
-                                        <div style={{display:'flex',gap:'8px',marginTop:'8px'}}>
-                                          <button className="showflow-btn success" onClick={() => handleSaveEdit(i)} style={{flex:1}}>✓ Save</button>
-                                          <button className="showflow-btn" onClick={handleCancelEdit} style={{flex:1}}>✕ Cancel</button>
-                                        </div>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
-                              </React.Fragment>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <button 
-                        className="showflow-btn success" 
-                        onClick={() => handleAddSegment(schedule.length)}
-                        style={{marginTop:'16px',width:'100%'}}
-                      >
-                        + Add Segment
-                      </button>
-                    </>
-                  )}
-                </section>
-
-                {/* Mobile Edit: Shared Events */}
-                <section className="showflow-card">
-                  <h3>Team Collaboration</h3>
-                  {currentSharedEventId ? (
-                    <div style={{background:'#fff4ce',padding:'12px',borderRadius:'4px',marginBottom:'12px'}}>
-                      <div style={{fontSize:'0.9em'}}>📤 <strong>{currentSharedEventId}</strong></div>
-                      <button 
-                        className="showflow-btn" 
-                        style={{ marginTop: '8px', padding: '6px 12px', fontSize: '0.8em' }}
-                        onClick={updateSharedEvent}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      className="showflow-btn success" 
-                      onClick={() => {
-                        const eventName = prompt('Enter name for shared event:');
-                        if (eventName) saveAsSharedEvent(eventName);
-                      }}
-                      disabled={isLoading}
-                      style={{width:'100%',marginBottom:'12px'}}
-                    >
-                      💾 Share This Schedule
-                    </button>
-                  )}
-                  {sharedEvents.length > 0 && (
-                    <div style={{maxHeight:'150px',overflow:'auto'}}>
-                      {sharedEvents.map((event) => (
-                        <div key={event.id} style={{
-                          padding:'8px',
-                          background:event.id === currentSharedEventId ? '#fff4ce' : '#f8f9fa',
-                          marginBottom:'4px',
-                          borderRadius:'4px',
-                          fontSize:'0.8em'
-                        }}>
-                          <div style={{fontWeight:'500'}}>{event.name}</div>
-                          <div style={{display:'flex',gap:'8px',marginTop:'4px'}}>
-                            <button 
-                              className="showflow-btn" 
-                              style={{padding:'2px 8px',fontSize:'0.7em'}}
-                              onClick={() => loadSharedEvent(event.id)}
-                              disabled={isLoading}
-                            >
-                              📥 Load
-                            </button>
-                            <button 
-                              className="showflow-btn danger" 
-                              style={{padding:'2px 8px',fontSize:'0.7em'}}
-                              onClick={() => deleteSharedEvent(event.id)}
-                              disabled={isLoading}
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              </>
-            ) : (
-            <>
-              {/* Mobile: Current Schedule First (Core Experience) */}
-              <section className="showflow-card">
-                <h2>Current Schedule</h2>
-                {schedule.length === 0 ? (
-                  <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
-                    <p style={{fontSize:'1.08em',marginBottom:16}}>
-                      No schedule loaded yet.<br />
-                      <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Get started below!</span>
-                    </p>
-                    <button
-                      className="showflow-btn success"
-                      style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
-                      onClick={() => handleAddSegment(0)}
-                    >
-                      + Create Schedule
-                    </button>
-                    <p style={{fontSize:'0.9em',margin:'16px 0 0 0',color:'#666'}}>
-                      or use the 📝 button below to import
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {hasNotesInSchedule() && (
-                      <button 
-                        className="showflow-btn" 
-                        style={{marginBottom:12}} 
-                        onClick={handleToggleAllNotes}
-                      >
-                        {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
-                      </button>
-                    )}
-                    {/* Mobile Schedule Table - simplified */}
-                    <div className="showflow-table-container">
-                      <table className="showflow-table">
-                        <thead>
-                          <tr>
-                            <th>Time</th>
-                            <th>Segment</th>
-                            <th></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {schedule.map((seg, i) => (
-                            <React.Fragment key={i}>
-                              <tr
-                                className={
-                                  (i === currentIdx ? 'current-segment ' : '') +
-                                  (i === currentIdx+1 ? 'next-segment ' : '') +
-                                  (i === overrunIdx ? 'overrun' : '')
-                                }
-                                style={{ position: 'relative' }}
-                                onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
-                                title="Tap to add notes or see details"
-                              >
-                                <td style={{fontSize:'0.9em'}}>{seg.time}</td>
-                                <td>
-                                  <div style={{fontSize:'1.0em',fontWeight:'500'}}>{seg.segment}</div>
-                                  {seg.presenter && (
-                                    <div style={{fontSize:'0.85em',color:'#666',marginTop:'2px'}}>
-                                      👤 {seg.presenter}
-                                    </div>
-                                  )}
-                                  <div style={{fontSize:'0.8em',color:'#888',marginTop:'2px'}}>
-                                    ⏱️ {seg.duration}
-                                  </div>
-                                </td>
-                                <td style={{textAlign:'right',width:'60px'}}>
-                                  {editIdx === i ? (
-                                    <div style={{display:'flex',gap:'4px'}}>
-                                      <button className="showflow-btn success" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }} style={{padding:'4px 8px',fontSize:'0.7em'}}>✓</button>
-                                      <button className="showflow-btn" onClick={e => { e.stopPropagation(); handleCancelEdit(); }} style={{padding:'4px 8px',fontSize:'0.7em'}}>✕</button>
-                                    </div>
-                                  ) : (
-                                    <button 
-                                      className="showflow-btn" 
-                                      onClick={e => { e.stopPropagation(); handleEdit(i); }} 
-                                      style={{padding:'6px 10px',fontSize:'0.8em'}}
-                                      title="Edit segment"
-                                    >
-                                      ✏️
-                                    </button>
-                                  )}
-                                </td>
-                              </tr>
-                              {/* Mobile inline editing */}
-                              {editIdx === i && (
-                                <tr>
-                                  <td colSpan={3} style={{background:'#f8fafd',padding:'12px'}}>
-                                    <div style={{display:'grid',gap:'8px'}}>
-                                      <input
-                                        name="time"
-                                        value={editValues.time || ''}
-                                        onChange={handleEditChange}
-                                        className="showflow-input"
-                                        placeholder="9:00 AM"
-                                        style={{width:'100%'}}
-                                      />
-                                      <input
-                                        name="segment"
-                                        value={editValues.segment || ''}
-                                        onChange={handleEditChange}
-                                        className="showflow-input"
-                                        placeholder="Session name"
-                                        style={{width:'100%'}}
-                                      />
-                                      <input
-                                        name="presenter"
-                                        value={editValues.presenter || ''}
-                                        onChange={handleEditChange}
-                                        className="showflow-input"
-                                        placeholder="Presenter"
-                                        style={{width:'100%'}}
-                                      />
-                                      <input
-                                        name="duration"
-                                        value={editValues.duration || ''}
-                                        onChange={handleEditChange}
-                                        className="showflow-input"
-                                        placeholder="30 min"
-                                        style={{width:'100%'}}
-                                      />
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                              {/* Expandable notes row */}
-                              {(allNotesExpanded || expandedNotesIdx === i) && editIdx !== i && (
-                                <tr>
-                                  <td colSpan={3} style={{background:'#f8fafd',padding:'12px'}}>
-                                    <input
-                                      type="text"
-                                      placeholder="Add notes or feedback..."
-                                      value={seg.notes || ''}
-                                      onChange={e => {
-                                        const updated = schedule.map((s, idx) => idx === i ? { ...s, notes: e.target.value } : s);
-                                        pushHistory(schedule);
-                                        setSchedule(updated);
-                                      }}
-                                      className="showflow-input"
-                                      style={{width:'100%'}}
-                                      autoFocus
-                                    />
-                                  </td>
-                                </tr>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-              </section>
-
-              {/* Mobile: Collapsible Advanced Sections */}
-              <section className="showflow-card">
-                <details>
-                  <summary style={{fontSize:'1.1em',fontWeight:'500',padding:'8px 0',cursor:'pointer'}}>
-                    � Import
-                  </summary>
-                  <div style={{marginTop:'16px'}}>
-                    {/* Import Section */}
-                    <p style={{marginBottom: 16}}>
-                      <a 
-                        href="https://aka.ms/showflowtrackertemplate" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="showflow-btn success template-button"
-                        style={{
-                          textDecoration: 'none',
-                          display: 'block',
-                          width: '100%',
-                          maxWidth: '300px',
-                          margin: '0 auto',
-                          padding: '12px 16px',
-                          borderRadius: '4px',
-                          fontSize: '0.9em',
-                          textAlign: 'center',
-                          boxSizing: 'border-box'
-                        }}
-                      >
-                        📋 Get Schedule Template
-                      </a>
-                    </p>
-                    <textarea
-                      className="showflow-textarea"
-                      placeholder="Paste your schedule here..."
-                      rows={4}
-                      value={inputValue}
-                      onChange={e => setInputValue(e.target.value)}
-                    />
-                    <div className="showflow-input-actions" style={{marginTop:'12px'}}>
-                      <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
-                      <label className="showflow-file-upload" style={{marginLeft:'8px'}}>
-                        <input type="file" accept=".csv" onChange={handleFileUpload} />
-                        <span>Upload .csv</span>
-                      </label>
-                    </div>
-                  </div>
-                </details>
-              </section>
-            </>
-            )}
-            
-            {/* Desktop Layout Only */}
-            {!isMobileDevice && (
-            <>
-                {/* Desktop: Import Section */}
-                <section className="showflow-card">
-                  <details>
-                    <summary style={{fontSize:'1.1em',fontWeight:'500',padding:'8px 0',cursor:'pointer'}}>
-                      📋 Import
-                    </summary>
-                    <div style={{marginTop:'16px'}}>
-                      <p style={{marginBottom: 16}}>
-                        <a 
-                          href="https://aka.ms/showflowtrackertemplate" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="showflow-btn success template-button"
-                          style={{
-                            textDecoration: 'none',
-                            display: 'block',
-                            width: '100%',
-                            maxWidth: '300px',
-                            margin: '0 auto',
-                            padding: '12px 16px',
-                            borderRadius: '4px',
-                            fontSize: '0.9em',
-                            textAlign: 'center',
-                            boxSizing: 'border-box'
-                          }}
-                        >
-                          📋 Get Schedule Template
-                        </a>
-                      </p>
-                      <textarea
-                        className="showflow-textarea"
-                        placeholder="Paste your schedule here..."
-                        rows={4}
-                        value={inputValue}
-                        onChange={e => setInputValue(e.target.value)}
-                      />
-                      <div className="showflow-input-actions" style={{marginTop:'12px'}}>
-                        <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
-                        <label className="showflow-file-upload" style={{marginLeft:'8px'}}>
-                          <input type="file" accept=".csv" onChange={handleFileUpload} />
-                          <span>Upload .csv</span>
-                        </label>
-                      </div>
-                    </div>
-                  </details>
-                </section>
-
-                {/* Desktop: Original Layout */}
+        <main className="showflow-main" style={{ 
+          display: presenterViewMode ? 'none' : 'block',
+          maxWidth: '100vw',
+          overflow: 'hidden',
+          boxSizing: 'border-box'
+        }}>
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
             <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#FFB900', color: '#323130' } : {}}>
@@ -2156,7 +1328,54 @@ const ShowFlowAgent = () => {
                 </span>
               )}
             </div>
-          )}
+          )}          {/* Schedule Input Section */}
+          <section className="showflow-card">
+            <h2>Import or Paste Schedule</h2>
+            <p style={{marginBottom: 16}}>
+              <a 
+                href="https://aka.ms/showflowtrackertemplate" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="showflow-btn success template-button"
+                style={{
+                  textDecoration: 'none',
+                  display: 'block',
+                  width: '100%',
+                  maxWidth: '300px',
+                  margin: '0 auto',
+                  padding: '12px 16px',
+                  borderRadius: '4px',
+                  fontSize: '0.9em',
+                  textAlign: 'center',
+                  boxSizing: 'border-box'
+                }}
+              >
+                📋 Click for Schedule Template
+              </a>
+            </p>
+            <textarea
+              className="showflow-textarea"
+              placeholder="Paste your schedule here..."
+              rows={6}
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onPaste={e => {
+                // Wait for paste to complete, then update inputValue and optionally auto-parse
+                setTimeout(() => {
+                  setInputValue(e.target.value);
+                  // Optionally auto-parse after paste
+                  // handleParseSchedule();
+                }, 0);
+              }}
+            />
+            <div className="showflow-input-actions">
+              <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
+              <label className="showflow-file-upload">
+                <input type="file" accept=".csv" onChange={handleFileUpload} />
+                <span>Upload .csv</span>
+              </label>
+            </div>
+          </section>
 
           {/* Shared Events Section */}
           <section className="showflow-card">
@@ -2411,293 +1630,9 @@ const ShowFlowAgent = () => {
             )}
           </section>
 
-          {/* Current Schedule - Desktop View */}
+          {/* Schedule Table Display */}
           <section className="showflow-card">
             <h2>Current Schedule</h2>
-            {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
-                  <p style={{fontSize:'1.08em',marginBottom:16}}>
-                    You can build your schedule here by adding segments.<br />
-                    <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
-                  </p>                  <button
-                    className="showflow-btn success"
-                    style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
-                    onClick={() => handleAddSegment(0)}
-                  >
-                    + Create a New Schedule
-                  </button>
-                </div>
-            ) : (
-              <>
-                {hasNotesInSchedule() && (
-                  <button 
-                    className="showflow-btn" 
-                    style={{marginBottom:12}} 
-                    onClick={handleToggleAllNotes}
-                  >
-                    {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
-                  </button>
-                )}
-              <div className="showflow-table-container">
-                <table className="showflow-table">                  <thead>
-                    <tr>
-                      <th></th> {/* Alert icon column */}
-                      <th>Time</th>
-                      <th>Duration</th>
-                      <th>Segment</th>
-                      <th>Presenter</th>
-                      <th colSpan={5}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schedule.map((seg, i) => (
-                      <React.Fragment key={i}>
-                        <tr
-                          draggable
-                          onDragStart={() => handleDragStart(i)}
-                          onDragOver={handleDragOver}
-                          onDrop={() => handleDrop(i)}
-                          className={
-                            (draggedIndex === i ? 'dragged ' : '') +
-                            (i === currentIdx ? 'current-segment ' : '') +
-                            (i === currentIdx+1 ? 'next-segment ' : '') +
-                            (i === overrunIdx ? 'overrun' : '')
-                          }
-                          style={{ cursor: 'pointer', position: 'relative' }}
-                          onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
-                          title="Click to reveal or add notes"
-                        >                          {/* Render icons on the right for mobile, left for desktop */}
-                          {!isMobile() && (
-                            <>
-                              {/* Alert icon */}
-                              <td style={{textAlign:'center',width:32}}>
-                                {i === currentIdx ? (
-                                  <span className="showflow-current-pulse" title="Current segment" />
-                                ) : (
-                                  <button
-                                    className="showflow-btn"
-                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                    title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
-                                    onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
-                                    tabIndex={0}
-                                  >
-                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#00A4EF':'#bbb'}}>
-                                      {alertSegments.includes(i) ? '🔔' : '🔕'}
-                                    </span>
-                                  </button>                                )}
-                              </td>
-                            </>
-                          )}                          {/* Editable fields */}
-                          {editIdx === i ? (
-                            <>
-                              <td>
-                                <input
-                                  name="time"
-                                  value={editValues.time || ''}
-                                  onChange={handleEditChange}
-                                  className="showflow-input"
-                                  style={{width:'6em'}}
-                                  placeholder="9:00 AM"
-                                  title="Edit start time - subsequent segments will be automatically adjusted"
-                                  autoFocus
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  name="duration"
-                                  value={editValues.duration || ''}
-                                  onChange={handleEditChange}
-                                  className="showflow-input"
-                                  style={{width:'5em'}}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  name="segment"
-                                  value={editValues.segment || ''}
-                                  onChange={handleEditChange}
-                                  className="showflow-input"
-                                  style={{width:'12em'}}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  name="presenter"
-                                  value={editValues.presenter || ''}
-                                  onChange={handleEditChange}
-                                  className="showflow-input"
-                                  style={{width:'10em'}}
-                                />
-                              </td>
-                              {/* Save/Cancel buttons */}
-                              <td colSpan={5} style={{minWidth:120}}>
-                                <button className="showflow-btn success" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }}>Save</button>
-                                <button className="showflow-btn" onClick={e => { e.stopPropagation(); handleCancelEdit(); }}>Cancel</button>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              <td style={{whiteSpace:'nowrap'}}>{seg.time}</td>
-                              <td>{seg.duration} min</td>
-                              <td style={{minWidth:'200px'}}>
-                                <strong>{seg.segment}</strong>
-                                {seg.presenter && <div style={{fontSize:'0.8em',color:'#888'}}>by {seg.presenter}</div>}
-                              </td>
-                              <td>{seg.presenter}</td>
-                              <td style={{textAlign:'center',width:40}}>
-                                <button
-                                  className="showflow-btn"
-                                  onClick={e => { e.stopPropagation(); handleEdit(i); }}
-                                  title="Edit segment"
-                                  tabIndex={0}
-                                >
-                                  ✏️
-                                </button>
-                              </td>
-                              <td style={{textAlign:'center',width:40}}>
-                                <button
-                                  className="showflow-btn"
-                                  onClick={e => { e.stopPropagation(); handleAddSegment(i); }}
-                                  title="Add segment after this one"
-                                  tabIndex={0}
-                                >
-                                  ➕
-                                </button>
-                              </td>
-                              <td style={{textAlign:'center',width:40}}>
-                                <button
-                                  className="showflow-btn danger"
-                                  onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }}
-                                  title="Remove segment"
-                                  tabIndex={0}
-                                >
-                                  🗑️
-                                </button>
-                              </td>
-                              <td style={{textAlign:'center',width:40}}>
-                                <button
-                                  className="showflow-btn"
-                                  onClick={e => { e.stopPropagation(); addNote(i); }}
-                                  title="Add note"
-                                  tabIndex={0}
-                                >
-                                  📝
-                                </button>
-                              </td>
-                              {/* Icon-only column on mobile for alerts */}
-                              {isMobile() && (
-                                <td style={{textAlign:'center',width:40}}>
-                                  <button
-                                    className="showflow-btn"
-                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
-                                    title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
-                                    onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
-                                    tabIndex={0}
-                                  >
-                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#00A4EF':'#bbb'}}>
-                                      {alertSegments.includes(i) ? '🔔' : '🔕'}
-                                    </span>
-                                  </button>
-                                </td>
-                              )}
-                            </>
-                          )}
-                        </tr>
-                        {/* Expandable notes row */}
-                        {(allNotesExpanded || expandedNotesIdx === i) && editIdx !== i && (
-                          <tr>
-                            <td colSpan={isMobile() ? 9 : 8} style={{background:'#f8fafd',padding:'12px'}}>
-                              <input
-                                type="text"
-                                placeholder="Add notes or feedback..."
-                                value={seg.notes || ''}
-                                onChange={e => {
-                                  const updated = schedule.map((s, idx) => idx === i ? { ...s, notes: e.target.value } : s);
-                                  pushHistory(schedule);
-                                  setSchedule(updated);
-                                }}
-                                className="showflow-input"
-                                style={{width:'100%'}}
-                                autoFocus
-                              />
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Add Segment Button */}
-              <button 
-                className="showflow-btn success" 
-                onClick={() => handleAddSegment(schedule.length)}
-                style={{marginTop:'16px'}}
-              >
-                + Add Segment
-              </button>
-
-              {/* Quick Add Options */}
-              {schedule.length > 0 && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '12px',
-                  background: '#f8fafd',
-                  borderRadius: '6px',
-                  border: '1px solid #e1e5e9'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    gap: '8px',
-                    marginBottom: '8px',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center'
-                  }}>
-                    <button
-                      className="showflow-btn success"
-                      onClick={() => handleAddSegment(schedule.length)}
-                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
-                    >
-                      + Add at End
-                    </button>
-                    
-                    <button
-                      className="showflow-btn success"
-                      onClick={() => handleAddSegment(0)}
-                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
-                    >
-                      + Add at Beginning
-                    </button>
-
-                    {schedule.length > 1 && (
-                      <button
-                        className="showflow-btn success"
-                        onClick={() => handleAddSegment(Math.floor(schedule.length / 2))}
-                        style={{ fontSize: '0.9em', padding: '8px 16px' }}
-                      >
-                        + Insert in Middle
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ fontSize: '0.85em', color: '#64748b', lineHeight: '1.4' }}>
-                    <div style={{ marginBottom: '4px' }}>
-                      💡 <strong>Quick tips:</strong> Click the <strong>+</strong> button next to any segment to add after it
-                    </div>
-                    <div>
-                      ⌨️ <strong>Keyboard shortcuts:</strong> Press <kbd style={{
-                        background: '#e2e8f0',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '0.8em',
-                        border: '1px solid #cbd5e1'
-                      }}>Ctrl+Enter</kbd> to add segments quickly
-                    </div>
-                  </div>
-                </div>
-              )}
-              </>
-            )}
             {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
                   <p style={{fontSize:'1.08em',marginBottom:16}}>
                     You can build your schedule here by adding segments.<br />
@@ -3030,10 +1965,7 @@ const ShowFlowAgent = () => {
               </div>
             </section>
           )}
-            </>
-          )}
         </main>
-        )}
         {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}
         {!presenterViewMode && (
           <>
@@ -3043,29 +1975,18 @@ const ShowFlowAgent = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            background: 'rgba(255,255,255,0.95)',
-            borderTop: '2px solid rgba(108,123,189,0.3)',
+            background: '#f8fafd',
+            borderTop: '1px solid #e0e4f7',
             padding: 0,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 1000,
-            boxShadow: '0 -4px 12px rgba(0,0,0,0.15)',
-            backdropFilter: 'blur(10px)'
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.04)'
           }}>
             <button
               className="showflow-btn"
-              style={{ 
-                width: '100%', 
-                fontSize: '1.2em', 
-                fontWeight: '600',
-                padding: '16px 0', 
-                borderRadius: 0, 
-                background: 'none', 
-                border: 'none', 
-                textAlign: 'center',
-                color: '#6c7bbd'
-              }}
+              style={{ width: '100%', fontSize: '1.2em', padding: '16px 0', borderRadius: 0, background: 'none', border: 'none', textAlign: 'center' }}
               onClick={() => setMobileFooterMenuOpen(v => !v)}
               aria-label="Show controls"
             >
@@ -3088,8 +2009,8 @@ const ShowFlowAgent = () => {
                 <button className="showflow-btn" onClick={toggleTheme} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>
                   {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
                 </button>
-                <button className="showflow-btn" onClick={() => setShowMobileEdit(true)} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>
-                  ⚙️ Edit Mode
+                <button className="showflow-btn" onClick={togglePresenterView} style={{ width: '100%', margin: '8px 0', display: 'block', backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : '', boxSizing: 'border-box' }}>
+                  {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
                 </button>
                 <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Undo</button>
                 <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Redo</button>

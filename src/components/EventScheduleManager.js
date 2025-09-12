@@ -2160,7 +2160,10 @@ const ShowFlowAgent = () => {
                 </details>
               </section>
             </>
-            )} : (
+            )}
+            
+            {/* Desktop Layout */}
+            {!isMobileDevice && (
             <>
                 {/* Desktop: Original Layout */}
           {/* Floating sticky bar for current segment */}
@@ -2180,54 +2183,7 @@ const ShowFlowAgent = () => {
                 </span>
               )}
             </div>
-          )}          {/* Schedule Input Section */}
-          <section className="showflow-card">
-            <h2>Import or Paste Schedule</h2>
-            <p style={{marginBottom: 16}}>
-              <a 
-                href="https://aka.ms/showflowtrackertemplate" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="showflow-btn success template-button"
-                style={{
-                  textDecoration: 'none',
-                  display: 'block',
-                  width: '100%',
-                  maxWidth: '300px',
-                  margin: '0 auto',
-                  padding: '12px 16px',
-                  borderRadius: '4px',
-                  fontSize: '0.9em',
-                  textAlign: 'center',
-                  boxSizing: 'border-box'
-                }}
-              >
-                📋 Click for Schedule Template
-              </a>
-            </p>
-            <textarea
-              className="showflow-textarea"
-              placeholder="Paste your schedule here..."
-              rows={6}
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              onPaste={e => {
-                // Wait for paste to complete, then update inputValue and optionally auto-parse
-                setTimeout(() => {
-                  setInputValue(e.target.value);
-                  // Optionally auto-parse after paste
-                  // handleParseSchedule();
-                }, 0);
-              }}
-            />
-            <div className="showflow-input-actions">
-              <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
-              <label className="showflow-file-upload">
-                <input type="file" accept=".csv" onChange={handleFileUpload} />
-                <span>Upload .csv</span>
-              </label>
-            </div>
-          </section>
+          )}
 
           {/* Shared Events Section */}
           <section className="showflow-card">
@@ -2243,6 +2199,46 @@ const ShowFlowAgent = () => {
             <p style={{fontSize: '0.85em', color: '#666', marginBottom: 16}}>
               <em>Collaborate on events with your team • Auto-syncs every 30 seconds</em>
             </p>
+            
+            {/* Quick Import Section */}
+            <details style={{ marginBottom: '16px', border: '1px solid #e1dfdd', borderRadius: '4px', padding: '12px' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: '500', fontSize: '0.9em', color: '#6c7bbd' }}>
+                📋 Import New Schedule
+              </summary>
+              <div style={{ marginTop: '12px' }}>
+                <p style={{ fontSize: '0.8em', color: '#666', marginBottom: '8px' }}>
+                  <a 
+                    href="https://aka.ms/showflowtrackertemplate" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#6c7bbd', textDecoration: 'none' }}
+                  >
+                    📋 Get Schedule Template
+                  </a>
+                </p>
+                <textarea
+                  className="showflow-textarea"
+                  placeholder="Paste your schedule here..."
+                  rows={3}
+                  value={inputValue}
+                  onChange={e => setInputValue(e.target.value)}
+                  style={{ fontSize: '0.85em' }}
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button 
+                    className="showflow-btn success" 
+                    onClick={handleParseSchedule}
+                    style={{ padding: '6px 12px', fontSize: '0.85em' }}
+                  >
+                    Parse Schedule
+                  </button>
+                  <label className="showflow-file-upload" style={{ fontSize: '0.85em' }}>
+                    <input type="file" accept=".csv" onChange={handleFileUpload} />
+                    <span>Upload .csv</span>
+                  </label>
+                </div>
+              </div>
+            </details>
             
             {/* Current shared event indicator */}
             {currentSharedEventId && (
@@ -2818,7 +2814,6 @@ const ShowFlowAgent = () => {
             </section>
           )}
             </>
-          )
           )}
         </main>
         )}

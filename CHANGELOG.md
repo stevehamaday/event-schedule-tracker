@@ -1,8 +1,27 @@
+## [1.4.0] - 2025-09-12 ✅ PRODUCTION READY
+
+### Added
+- **Premium Azure Deployment**: Successfully deployed to Basic B1 App Service plan
+  - **Production URL**: https://showflowapp.azurewebsites.net/ (Basic B1 tier - LIVE)
+  - **Performance**: Eliminates 1-2 minute cold start delays - instant response times
+  - **Resources**: Dedicated compute resources for consistent, reliable performance
+  - **Deployment**: GitHub Actions CI/CD pipeline fully operational
+- **Multi-Tier Strategy**: Implemented production/backup deployment architecture
+  - **Production**: showflowapp.azurewebsites.net (B1 - always-on, $13-15/month)
+  - **Backup**: showflow-clean.azurewebsites.net (Free tier - spins down, $0 when idle)
+  - **Benefit**: Zero-cost backup with production-grade primary deployment
+
+### Technical Improvements
+- **SCM Basic Authentication**: Properly configured for GitHub Actions deployment
+- **App Settings Synchronization**: Copied working configuration from backup to production
+- **Publish Profile Management**: Resolved deployment credential issues
+- **Build Pipeline**: Stable webpack production builds with React 18.2.0
+
 ## [1.3.0] - 2025-09-12
 
 ### Added
 - **Azure Web App Deployment**: Successfully deployed to Azure App Service with GitHub Actions CI/CD
-  - Primary URL: https://showflow-clean.azurewebsites.net/
+  - Development URL: https://showflow-clean.azurewebsites.net/
   - Automatic deployment on push to `feature/experimental-fixes` branch
   - Node.js 20 LTS runtime on Linux App Service (Free tier)
 - **Persistent Shared Events**: Implemented server-side storage for shared event schedules

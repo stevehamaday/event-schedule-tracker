@@ -1301,12 +1301,51 @@ const ShowFlowAgent = () => {
                     </div>
                   ) : null}
 
-                  {/* Quick Return Button */}
-                  <div className="showflow-presenter-controls">
-                    <button className="showflow-btn large" onClick={togglePresenterView}>
-                      ← Normal View
-                    </button>
-                  </div>
+                  {/* Mobile-Friendly Floating Controls */}
+                  {isMobileDevice ? (
+                    <div className="showflow-presenter-mobile-menu">
+                      <button 
+                        className="showflow-btn" 
+                        onClick={() => showEventSelector()}
+                        style={{
+                          background: 'rgba(255,255,255,0.9)',
+                          color: '#6c7bbd',
+                          margin: '8px',
+                          padding: '12px 20px',
+                          fontSize: '1em',
+                          fontWeight: '600',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                        }}
+                      >
+                        📂 Choose Event
+                      </button>
+                      <button 
+                        className="showflow-btn" 
+                        onClick={togglePresenterView}
+                        style={{
+                          background: 'rgba(255,255,255,0.9)',
+                          color: '#6c7bbd',
+                          margin: '8px',
+                          padding: '12px 20px',
+                          fontSize: '1em',
+                          fontWeight: '600',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                        }}
+                      >
+                        ⚙️ Edit Mode
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="showflow-presenter-controls">
+                      <button className="showflow-btn large" onClick={togglePresenterView}>
+                        ← Normal View
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>

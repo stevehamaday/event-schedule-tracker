@@ -706,6 +706,144 @@ body.dark, .showflow-root.dark {
     position: static;
     margin-left: auto;
   }
+
+  /* Progressive disclosure styles for mobile */
+  .showflow-card details {
+    border: 1px solid #e1dfdd;
+    border-radius: 8px;
+    padding: 0;
+    margin-bottom: 16px;
+    background: white;
+  }
+
+  .showflow-card details summary {
+    background: #f8fafd;
+    padding: 16px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    color: #323130;
+    user-select: none;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .showflow-card details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .showflow-card details summary::after {
+    content: '▼';
+    font-size: 0.8em;
+    color: #666;
+    transition: transform 0.3s ease;
+  }
+
+  .showflow-card details[open] summary::after {
+    transform: rotate(180deg);
+  }
+
+  .showflow-card details[open] summary {
+    border-bottom: 1px solid #e1dfdd;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .showflow-card details > div {
+    padding: 16px;
+    background: white;
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* Mobile table optimizations - hide non-essential columns */
+  .showflow-table th:first-child,
+  .showflow-table td:first-child {
+    display: none; /* Hide alert column */
+  }
+
+  .showflow-table th:nth-child(3),
+  .showflow-table td:nth-child(3) {
+    display: none; /* Hide duration column */
+  }
+
+  .showflow-table th:nth-child(5),
+  .showflow-table td:nth-child(5) {
+    display: none; /* Hide presenter column */
+  }
+
+  .showflow-table th:nth-child(6),
+  .showflow-table td:nth-child(6),
+  .showflow-table th:nth-child(7),
+  .showflow-table td:nth-child(7),
+  .showflow-table th:nth-child(8),
+  .showflow-table td:nth-child(8),
+  .showflow-table th:nth-child(9),
+  .showflow-table td:nth-child(9) {
+    display: none; /* Hide action buttons except edit */
+  }
+
+  /* Keep edit button visible */
+  .showflow-table th:nth-child(10),
+  .showflow-table td:nth-child(10) {
+    display: table-cell;
+  }
+
+  /* Mobile table styling */
+  .showflow-table {
+    font-size: 0.9em;
+  }
+
+  .showflow-table th {
+    font-size: 0.9em;
+    padding: 12px 8px;
+  }
+
+  .showflow-table td {
+    padding: 12px 8px;
+    vertical-align: top;
+  }
+
+  /* Empty state mobile optimization */
+  .showflow-empty {
+    padding: 24px 16px !important;
+  }
+
+  .showflow-empty p {
+    font-size: 1em !important;
+    line-height: 1.4;
+  }
+
+  .showflow-empty button {
+    font-size: 1em !important;
+    padding: 12px 24px !important;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  /* Mobile logo header */
+  .mobile-logo-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #6c7bbd 0%, #8a9dc9 100%);
+    margin-bottom: 16px;
+    border-radius: 8px;
+    color: white;
+  }
+
+  .mobile-logo-header img {
+    height: 32px;
+    margin-right: 12px;
+  }
+
+  .mobile-logo-header h1 {
+    font-size: 1.2em;
+    margin: 0;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
 }
 /* --- END MOBILE-ONLY IMPROVEMENTS --- */
 

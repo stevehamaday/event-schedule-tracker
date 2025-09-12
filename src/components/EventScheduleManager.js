@@ -1311,6 +1311,288 @@ const ShowFlowAgent = () => {
           overflow: 'hidden',
           boxSizing: 'border-box'
         }}>
+          {/* Mobile: Prioritize Current Schedule, collapse management sections */}
+          {isMobileDevice ? (
+            <>
+              {/* Mobile: Current Schedule First (Core Experience) */}
+              <section className="showflow-card">
+                <h2>Current Schedule</h2>
+                {schedule.length === 0 ? (
+                  <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
+                    <p style={{fontSize:'1.08em',marginBottom:16}}>
+                      No schedule loaded yet.<br />
+                      <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Get started below!</span>
+                    </p>
+                    <button
+                      className="showflow-btn success"
+                      style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
+                      onClick={() => handleAddSegment(0)}
+                    >
+                      + Create Schedule
+                    </button>
+                    <p style={{fontSize:'0.9em',margin:'16px 0 0 0',color:'#666'}}>
+                      or use the 📝 button below to import
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {hasNotesInSchedule() && (
+                      <button 
+                        className="showflow-btn" 
+                        style={{marginBottom:12}} 
+                        onClick={handleToggleAllNotes}
+                      >
+                        {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
+                      </button>
+                    )}
+                    {/* Mobile Schedule Table - simplified */}
+                    <div className="showflow-table-container">
+                      <table className="showflow-table">
+                        <thead>
+                          <tr>
+                            <th>Time</th>
+                            <th>Segment</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {schedule.map((seg, i) => (
+                            <React.Fragment key={i}>
+                              <tr
+                                className={
+                                  (i === currentIdx ? 'current-segment ' : '') +
+                                  (i === currentIdx+1 ? 'next-segment ' : '') +
+                                  (i === overrunIdx ? 'overrun' : '')
+                                }
+                                style={{ position: 'relative' }}
+                                onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
+                                title="Tap to add notes or see details"
+                              >
+                                <td style={{fontSize:'0.9em'}}>{seg.time}</td>
+                                <td>
+                                  <div style={{fontSize:'1.0em',fontWeight:'500'}}>{seg.segment}</div>
+                                  {seg.presenter && (
+                                    <div style={{fontSize:'0.85em',color:'#666',marginTop:'2px'}}>
+                                      👤 {seg.presenter}
+                                    </div>
+                                  )}
+                                  <div style={{fontSize:'0.8em',color:'#888',marginTop:'2px'}}>
+                                    ⏱️ {seg.duration}
+                                  </div>
+                                </td>
+                                <td style={{textAlign:'right',width:'60px'}}>
+                                  {editIdx === i ? (
+                                    <div style={{display:'flex',gap:'4px'}}>
+                                      <button className="showflow-btn success" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }} style={{padding:'4px 8px',fontSize:'0.7em'}}>✓</button>
+                                      <button className="showflow-btn" onClick={e => { e.stopPropagation(); handleCancelEdit(); }} style={{padding:'4px 8px',fontSize:'0.7em'}}>✕</button>
+                                    </div>
+                                  ) : (
+                                    <button 
+                                      className="showflow-btn" 
+                                      onClick={e => { e.stopPropagation(); handleEdit(i); }} 
+                                      style={{padding:'6px 10px',fontSize:'0.8em'}}
+                                      title="Edit segment"
+                                    >
+                                      ✏️
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                              {/* Mobile inline editing */}
+                              {editIdx === i && (
+                                <tr>
+                                  <td colSpan={3} style={{background:'#f8fafd',padding:'12px'}}>
+                                    <div style={{display:'grid',gap:'8px'}}>
+                                      <input
+                                        name="time"
+                                        value={editValues.time || ''}
+                                        onChange={handleEditChange}
+                                        className="showflow-input"
+                                        placeholder="9:00 AM"
+                                        style={{width:'100%'}}
+                                      />
+                                      <input
+                                        name="segment"
+                                        value={editValues.segment || ''}
+                                        onChange={handleEditChange}
+                                        className="showflow-input"
+                                        placeholder="Session name"
+                                        style={{width:'100%'}}
+                                      />
+                                      <input
+                                        name="presenter"
+                                        value={editValues.presenter || ''}
+                                        onChange={handleEditChange}
+                                        className="showflow-input"
+                                        placeholder="Presenter"
+                                        style={{width:'100%'}}
+                                      />
+                                      <input
+                                        name="duration"
+                                        value={editValues.duration || ''}
+                                        onChange={handleEditChange}
+                                        className="showflow-input"
+                                        placeholder="30 min"
+                                        style={{width:'100%'}}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                              {/* Expandable notes row */}
+                              {(allNotesExpanded || expandedNotesIdx === i) && editIdx !== i && (
+                                <tr>
+                                  <td colSpan={3} style={{background:'#f8fafd',padding:'12px'}}>
+                                    <input
+                                      type="text"
+                                      placeholder="Add notes or feedback..."
+                                      value={seg.notes || ''}
+                                      onChange={e => {
+                                        const updated = schedule.map((s, idx) => idx === i ? { ...s, notes: e.target.value } : s);
+                                        pushHistory(schedule);
+                                        setSchedule(updated);
+                                      }}
+                                      className="showflow-input"
+                                      style={{width:'100%'}}
+                                      autoFocus
+                                    />
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </section>
+
+              {/* Mobile: Collapsible Advanced Sections */}
+              <section className="showflow-card">
+                <details>
+                  <summary style={{fontSize:'1.1em',fontWeight:'500',padding:'8px 0',cursor:'pointer'}}>
+                    📝 Import & Collaboration
+                  </summary>
+                  <div style={{marginTop:'16px'}}>
+                    {/* Import Section */}
+                    <h3 style={{fontSize:'1em',marginBottom:'12px'}}>Import Schedule</h3>
+                    <p style={{marginBottom: 16}}>
+                      <a 
+                        href="https://aka.ms/showflowtrackertemplate" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="showflow-btn success template-button"
+                        style={{
+                          textDecoration: 'none',
+                          display: 'block',
+                          width: '100%',
+                          maxWidth: '300px',
+                          margin: '0 auto',
+                          padding: '12px 16px',
+                          borderRadius: '4px',
+                          fontSize: '0.9em',
+                          textAlign: 'center',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        📋 Get Schedule Template
+                      </a>
+                    </p>
+                    <textarea
+                      className="showflow-textarea"
+                      placeholder="Paste your schedule here..."
+                      rows={4}
+                      value={inputValue}
+                      onChange={e => setInputValue(e.target.value)}
+                    />
+                    <div className="showflow-input-actions" style={{marginTop:'12px'}}>
+                      <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
+                      <label className="showflow-file-upload" style={{marginLeft:'8px'}}>
+                        <input type="file" accept=".csv" onChange={handleFileUpload} />
+                        <span>Upload CSV</span>
+                      </label>
+                    </div>
+
+                    {/* Simplified Shared Events for Mobile */}
+                    <div style={{marginTop:'24px',borderTop:'1px solid #e1dfdd',paddingTop:'16px'}}>
+                      <h3 style={{fontSize:'1em',marginBottom:'12px'}}>
+                        Team Collaboration 
+                        <span style={{ marginLeft: 8, fontSize: '0.8em', color: connectionStatus === 'connected' ? '#107c10' : '#666' }}>
+                          {connectionStatus === 'connected' ? '🟢' : '⚪'}
+                        </span>
+                      </h3>
+                      {currentSharedEventId ? (
+                        <div style={{background:'#fff4ce',padding:'12px',borderRadius:'4px',marginBottom:'12px'}}>
+                          <div style={{fontSize:'0.9em'}}>📤 <strong>{currentSharedEventId}</strong></div>
+                          <button 
+                            className="showflow-btn" 
+                            style={{ marginTop: '8px', padding: '6px 12px', fontSize: '0.8em' }}
+                            onClick={updateSharedEvent}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? 'Saving...' : 'Save Changes'}
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          className="showflow-btn success" 
+                          onClick={() => {
+                            const eventName = prompt('Enter name for shared event:');
+                            if (eventName) saveAsSharedEvent(eventName);
+                          }}
+                          disabled={isLoading}
+                          style={{width:'100%',marginBottom:'12px'}}
+                        >
+                          💾 Share This Schedule
+                        </button>
+                      )}
+                      {sharedEvents.length > 0 && (
+                        <details style={{marginTop:'12px'}}>
+                          <summary style={{fontSize:'0.9em',cursor:'pointer'}}>
+                            📂 Shared Events ({sharedEvents.length})
+                          </summary>
+                          <div style={{maxHeight:'150px',overflow:'auto',marginTop:'8px'}}>
+                            {sharedEvents.map((event) => (
+                              <div key={event.id} style={{
+                                padding:'8px',
+                                background:event.id === currentSharedEventId ? '#fff4ce' : '#f8f9fa',
+                                marginBottom:'4px',
+                                borderRadius:'4px',
+                                fontSize:'0.8em'
+                              }}>
+                                <div style={{fontWeight:'500'}}>{event.name}</div>
+                                <div style={{display:'flex',gap:'8px',marginTop:'4px'}}>
+                                  <button 
+                                    className="showflow-btn" 
+                                    style={{padding:'2px 8px',fontSize:'0.7em'}}
+                                    onClick={() => loadSharedEvent(event.id)}
+                                    disabled={isLoading}
+                                  >
+                                    📥 Load
+                                  </button>
+                                  <button 
+                                    className="showflow-btn danger" 
+                                    style={{padding:'2px 8px',fontSize:'0.7em'}}
+                                    onClick={() => deleteSharedEvent(event.id)}
+                                    disabled={isLoading}
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                </details>
+              </section>
+            </>
+          ) : (
+            <>
+              {/* Desktop: Original Layout */}
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
             <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#FFB900', color: '#323130' } : {}}>
@@ -1964,6 +2246,8 @@ const ShowFlowAgent = () => {
                 <button className="showflow-btn" onClick={() => setDebugNow(new Date())}>Set Now to Current Time</button>
               </div>
             </section>
+          )}
+            </>
           )}
         </main>
         {/* Undo/Redo/Reset Footer Controls + Dark Mode Toggle */}

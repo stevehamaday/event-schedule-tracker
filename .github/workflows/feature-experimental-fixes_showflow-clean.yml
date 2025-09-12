@@ -1,9 +1,10 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
-# BACKUP DEPLOYMENT - Free Tier App Service
-# Target: https://showflow-clean.azurewebsites.net/ (Spins down when idle, $0 cost)
+# BACKUP/FALLBACK DEPLOYMENT - Free Tier App Service
+# Target: https://showflow-clean.azurewebsites.net/ (Backup for production)
+# Deploys alongside production for redundancy
 
-name: Build and deploy Node.js app to Azure Web App - showflow-clean (BACKUP)
+name: Build and deploy Node.js app to Azure Web App - showflow-clean (BACKUP/FALLBACK)
 
 on:
   push:

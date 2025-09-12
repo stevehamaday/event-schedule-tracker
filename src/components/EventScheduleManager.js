@@ -221,11 +221,127 @@ const ShowFlowAgent = () => {
   const [currentSharedEventId, setCurrentSharedEventId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected'); // 'connected', 'loading', 'error', 'disconnected'
+  
+  // Enhanced version control state
+  const [userSessionId, setUserSessionId] = useState(null);
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [conflictInfo, setConflictInfo] = useState(null);
+  const [lastModified, setLastModified] = useState(null);
+  const [versionInfo, setVersionInfo] = useState(null);
 
   // API Base URL - in production this would be your Azure Web App URL
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
     ? window.location.origin  // Use same domain in production
     : 'http://localhost:5001'; // Local development
+
+  // Initialize user session when component mounts
+  const initializeUserSession = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/start-session`);
+      setUserSessionId(response.data.sessionId);
+      console.log('User session initialized:', response.data.sessionId);
+    } catch (error) {
+      console.error('Failed to initialize user session:', error);
+    }
+  };
+
+  // End user session when component unmounts
+  const endUserSession = async () => {
+    if (userSessionId) {
+      try {
+        await axios.post(`${API_BASE_URL}/api/end-session`, { sessionId: userSessionId });
+        console.log('User session ended:', userSessionId);
+      } catch (error) {
+        console.error('Failed to end user session:', error);
+      }
+    }
+  };
+
+  // Get active users for current event
+  const getActiveUsers = async () => {
+    if (!currentSharedEventId) return;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/active-users/${currentSharedEventId}`);
+      setActiveUsers(response.data.activeUsers || []);
+    } catch (error) {
+      console.error('Failed to get active users:', error);
+    }
+  };
+
+  // Check for version conflicts
+  const checkVersionConflicts = async (eventId) => {
+    if (!lastModified) return false;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/check-conflicts`, {
+        eventId,
+        clientLastModified: lastModified
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to check version conflicts:', error);
+      return { hasConflict: false };
+    }
+  };
+
+  // Restore original version of an event
+  const restoreOriginalVersion = async (eventId) => {
+    if (!confirm('Are you sure you want to restore the original version? This will overwrite all current changes.')) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      const response = await axios.post(`${API_BASE_URL}/api/restore-original/${eventId}`);
+      
+      // Reload the event to show the restored version
+      await loadSharedEvent(eventId);
+      
+      setSummary(prev => [...prev, `Restored original version of '${eventId}'`]);
+      alert('Original version has been restored successfully!');
+    } catch (error) {
+      console.error('Failed to restore original version:', error);
+      setSummary(prev => [...prev, `Error restoring original version: ${error.message}`]);
+      alert(`Error restoring original version: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle version conflict resolution
+  const handleVersionConflict = async (eventId, action) => {
+    try {
+      setIsLoading(true);
+      
+      if (action === 'force-save') {
+        // User chose to overwrite changes
+        const eventData = {
+          name: eventId,
+          schedule: schedule,
+          metadata: {
+            title: title || eventId,
+            lastModified: new Date().toISOString(),
+            sessionId: userSessionId
+          }
+        };
+        
+        await axios.post(`${API_BASE_URL}/api/events/${eventId}`, eventData);
+        setConflictInfo(null);
+        setSummary(prev => [...prev, `Force-saved changes to '${eventId}' (overrode conflicting changes)`]);
+        
+      } else if (action === 'reload') {
+        // User chose to reload and lose their changes
+        await loadSharedEvent(eventId);
+        setConflictInfo(null);
+        setSummary(prev => [...prev, `Reloaded '${eventId}' from server (local changes discarded)`]);
+      }
+      
+    } catch (error) {
+      console.error('Failed to resolve version conflict:', error);
+      setSummary(prev => [...prev, `Error resolving conflict: ${error.message}`]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load shared events from backend
   const loadSharedEvents = async () => {
@@ -261,10 +377,11 @@ const ShowFlowAgent = () => {
         name: eventName.trim(),
         schedule: schedule,
         metadata: {
-          title: title || eventName.trim(), // Use title if available, otherwise use eventName
-          createdBy: 'User', // Could be enhanced with actual user authentication
+          title: title || eventName.trim(),
+          createdBy: userSessionId || 'Anonymous',
           createdAt: new Date().toISOString(),
-          lastModified: new Date().toISOString()
+          lastModified: new Date().toISOString(),
+          sessionId: userSessionId
         }
       };
 
@@ -272,17 +389,20 @@ const ShowFlowAgent = () => {
       const response = await axios.post(`${API_BASE_URL}/api/events/${eventName.trim()}`, eventData);
       console.log('Save response:', response);
       
+      // Update local state with new timestamp
+      setLastModified(eventData.metadata.lastModified);
+      
       // Refresh shared events list
       await loadSharedEvents();
       
       setCurrentSharedEventId(eventName.trim());
       setSummary(prev => [...prev, `Shared event '${eventName}' saved successfully`]);
-      alert(`Shared event '${eventName}' saved successfully!`); // Temporary user feedback
+      alert(`Shared event '${eventName}' saved successfully!`);
     } catch (error) {
       console.error('Failed to save shared event:', error);
       console.error('Error details:', error.response || error);
       setSummary(prev => [...prev, `Error saving shared event: ${error.message}`]);
-      alert(`Error saving shared event: ${error.message}`); // Temporary user feedback
+      alert(`Error saving shared event: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -304,6 +424,11 @@ const ShowFlowAgent = () => {
         setSchedule(selectedEvent.schedule || []);
         setTitle(selectedEvent.metadata?.title || selectedEvent.name);
         setCurrentSharedEventId(eventId);
+        setLastModified(selectedEvent.metadata?.lastModified);
+        setVersionInfo(selectedEvent.versionControl);
+        
+        // Get active users for this event
+        await getActiveUsers();
         
         setSummary(prev => [...prev, `Loaded shared event '${selectedEvent.name}'`]);
       } else {
@@ -330,16 +455,34 @@ const ShowFlowAgent = () => {
 
     try {
       setIsLoading(true);
+      
+      // Check for version conflicts first
+      const conflictCheck = await checkVersionConflicts(currentSharedEventId);
+      
+      if (conflictCheck.hasConflict) {
+        setConflictInfo({
+          eventId: currentSharedEventId,
+          serverLastModified: conflictCheck.serverLastModified,
+          clientLastModified: lastModified
+        });
+        setIsLoading(false);
+        return; // Don't save, let user resolve conflict
+      }
+      
       const eventData = {
         name: currentSharedEventId,
         schedule: schedule,
         metadata: {
-          title: title || currentSharedEventId, // Use title if available, otherwise use currentSharedEventId
-          lastModified: new Date().toISOString()
+          title: title || currentSharedEventId,
+          lastModified: new Date().toISOString(),
+          sessionId: userSessionId
         }
       };
 
       await axios.post(`${API_BASE_URL}/api/events/${currentSharedEventId}`, eventData);
+      
+      // Update local timestamp
+      setLastModified(eventData.metadata.lastModified);
       
       setSummary(prev => [...prev, `Updated shared event '${currentSharedEventId}'`]);
     } catch (error) {
@@ -352,13 +495,34 @@ const ShowFlowAgent = () => {
 
   // Delete a shared event
   const deleteSharedEvent = async (eventId) => {
-    if (!confirm(`Are you sure you want to delete shared event '${eventId}'?`)) {
+    if (!confirm(`Are you sure you want to delete shared event '${eventId}'? This action cannot be undone.`)) {
       return;
     }
 
     try {
       setIsLoading(true);
-      await axios.delete(`${API_BASE_URL}/api/events/${eventId}`);
+      
+      // Try regular delete first (soft delete)
+      try {
+        await axios.delete(`${API_BASE_URL}/api/events/${eventId}`);
+      } catch (error) {
+        if (error.response?.status === 403) {
+          // Need admin permission for true delete
+          const adminPassword = prompt('This event is protected. Enter admin password for permanent deletion:');
+          if (!adminPassword) {
+            setIsLoading(false);
+            return;
+          }
+          
+          await axios.delete(`${API_BASE_URL}/api/admin/events/${eventId}`, {
+            headers: {
+              'Admin-Password': adminPassword
+            }
+          });
+        } else {
+          throw error;
+        }
+      }
       
       // Refresh shared events list
       await loadSharedEvents();
@@ -366,30 +530,53 @@ const ShowFlowAgent = () => {
       // Clear current shared event if it was deleted
       if (currentSharedEventId === eventId) {
         setCurrentSharedEventId(null);
+        setLastModified(null);
+        setVersionInfo(null);
       }
       
       setSummary(prev => [...prev, `Deleted shared event '${eventId}'`]);
     } catch (error) {
       console.error('Failed to delete shared event:', error);
       setSummary(prev => [...prev, `Error deleting shared event: ${error.message}`]);
+      if (error.response?.status === 401) {
+        alert('Invalid admin password. Delete operation cancelled.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Load shared events on component mount
+  // Load shared events on component mount and manage session
   useEffect(() => {
+    // Initialize user session
+    initializeUserSession();
+    
+    // Load shared events
     loadSharedEvents();
     
-    // Optional: Set up periodic refresh for real-time collaboration
+    // Set up periodic refresh for real-time collaboration
     const interval = setInterval(() => {
       if (connectionStatus === 'connected') {
         loadSharedEvents();
+        if (currentSharedEventId) {
+          getActiveUsers();
+        }
       }
     }, 30000); // Refresh every 30 seconds
     
-    return () => clearInterval(interval);
+    // Clean up session on unmount
+    return () => {
+      clearInterval(interval);
+      endUserSession();
+    };
   }, []);
+
+  // Update active users when current shared event changes
+  useEffect(() => {
+    if (currentSharedEventId && connectionStatus === 'connected') {
+      getActiveUsers();
+    }
+  }, [currentSharedEventId, connectionStatus]);
 
   const handleDebugNow = () => {
     const input = prompt('Enter a time (e.g., 10:05 AM):', '10:05 AM');
@@ -1195,15 +1382,109 @@ const ShowFlowAgent = () => {
                 marginBottom: '12px',
                 fontSize: '0.9em'
               }}>
-                <strong>📤 Currently editing:</strong> {currentSharedEventId}
-                <button 
-                  className="showflow-btn" 
-                  style={{ marginLeft: '12px', padding: '4px 8px', fontSize: '0.8em' }}
-                  onClick={updateSharedEvent}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Saving...' : 'Save Changes'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div>
+                    <strong>📤 Currently editing:</strong> {currentSharedEventId}
+                    {userSessionId && (
+                      <span style={{ marginLeft: '8px', fontSize: '0.8em', color: '#666' }}>
+                        (You: {userSessionId})
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      className="showflow-btn" 
+                      style={{ padding: '4px 8px', fontSize: '0.8em' }}
+                      onClick={updateSharedEvent}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    {versionInfo && versionInfo.originalVersion && (
+                      <button 
+                        className="showflow-btn warning" 
+                        style={{ padding: '4px 8px', fontSize: '0.8em' }}
+                        onClick={() => restoreOriginalVersion(currentSharedEventId)}
+                        disabled={isLoading}
+                        title="Restore the original version before any changes"
+                      >
+                        🔄 Restore Original
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Active users indicator */}
+                {activeUsers.length > 1 && (
+                  <div style={{ fontSize: '0.8em', color: '#666', marginBottom: '4px' }}>
+                    <span style={{ color: '#107c10' }}>👥</span> Active users: {activeUsers.filter(user => user !== userSessionId).join(', ')}
+                  </div>
+                )}
+                
+                {/* Version info */}
+                {versionInfo && (
+                  <div style={{ fontSize: '0.8em', color: '#666' }}>
+                    {versionInfo.versions && versionInfo.versions.length > 1 && (
+                      <span>📋 {versionInfo.versions.length} versions saved • </span>
+                    )}
+                    {lastModified && (
+                      <span>Last modified: {new Date(lastModified).toLocaleString()}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Version conflict modal */}
+            {conflictInfo && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2000
+              }}>
+                <div style={{
+                  background: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  maxWidth: '500px',
+                  margin: '20px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                }}>
+                  <h3 style={{ marginTop: 0, color: '#d13438' }}>⚠️ Version Conflict Detected</h3>
+                  <p>
+                    Another user has modified this event since you started editing. 
+                  </p>
+                  <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '4px', margin: '16px 0' }}>
+                    <strong>Your version:</strong> {new Date(conflictInfo.clientLastModified).toLocaleString()}<br/>
+                    <strong>Server version:</strong> {new Date(conflictInfo.serverLastModified).toLocaleString()}
+                  </div>
+                  <p style={{ fontSize: '0.9em', color: '#666' }}>
+                    Choose how to resolve this conflict:
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button 
+                      className="showflow-btn"
+                      onClick={() => handleVersionConflict(conflictInfo.eventId, 'reload')}
+                      disabled={isLoading}
+                    >
+                      📥 Load Latest (Discard My Changes)
+                    </button>
+                    <button 
+                      className="showflow-btn warning"
+                      onClick={() => handleVersionConflict(conflictInfo.eventId, 'force-save')}
+                      disabled={isLoading}
+                    >
+                      💾 Force Save (Override Changes)
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1256,31 +1537,60 @@ const ShowFlowAgent = () => {
                     }}
                   >
                     <div style={{ flex: 1 }}>
-                      <strong>{event.name}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <strong>{event.name}</strong>
+                        {event.versionControl?.isSoftDeleted && (
+                          <span style={{ 
+                            fontSize: '0.8em', 
+                            color: '#d13438', 
+                            background: '#fef2f2', 
+                            padding: '2px 6px', 
+                            borderRadius: '4px',
+                            border: '1px solid #fecaca'
+                          }}>
+                            🗑️ Soft Deleted
+                          </span>
+                        )}
+                        {event.versionControl?.originalVersion && (
+                          <span style={{ 
+                            fontSize: '0.8em', 
+                            color: '#059669', 
+                            title: 'Original version is preserved'
+                          }}>
+                            🛡️
+                          </span>
+                        )}
+                      </div>
                       {event.metadata && (
                         <div style={{ fontSize: '0.8em', color: '#666' }}>
                           Created: {new Date(event.metadata.createdAt).toLocaleDateString()}
                           {event.metadata.lastModified && ` • Modified: ${new Date(event.metadata.lastModified).toLocaleDateString()}`}
                           {event.schedule && ` • ${event.schedule.length} segments`}
+                          {event.versionControl?.versions && event.versionControl.versions.length > 1 && (
+                            <span> • {event.versionControl.versions.length} versions</span>
+                          )}
                         </div>
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '4px' }}>
-                      <button 
-                        className="showflow-btn" 
-                        style={{ padding: '4px 8px', fontSize: '0.8em' }}
-                        onClick={() => loadSharedEvent(event.id)}
-                        disabled={isLoading}
-                      >
-                        📥 Load
-                      </button>
+                      {!event.versionControl?.isSoftDeleted && (
+                        <button 
+                          className="showflow-btn" 
+                          style={{ padding: '4px 8px', fontSize: '0.8em' }}
+                          onClick={() => loadSharedEvent(event.id)}
+                          disabled={isLoading}
+                        >
+                          📥 Load
+                        </button>
+                      )}
                       <button 
                         className="showflow-btn danger" 
                         style={{ padding: '4px 8px', fontSize: '0.8em' }}
                         onClick={() => deleteSharedEvent(event.id)}
                         disabled={isLoading}
+                        title={event.versionControl?.isSoftDeleted ? 'Permanently delete (admin required)' : 'Delete event'}
                       >
-                        🗑️
+                        {event.versionControl?.isSoftDeleted ? '💀' : '🗑️'}
                       </button>
                     </div>
                   </div>

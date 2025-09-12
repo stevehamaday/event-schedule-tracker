@@ -2088,9 +2088,56 @@ const ShowFlowAgent = () => {
             </>
             )}
             
-            {/* Desktop Layout */}
+            {/* Desktop Layout Only */}
             {!isMobileDevice && (
             <>
+                {/* Desktop: Import Section */}
+                <section className="showflow-card">
+                  <details>
+                    <summary style={{fontSize:'1.1em',fontWeight:'500',padding:'8px 0',cursor:'pointer'}}>
+                      📋 Import
+                    </summary>
+                    <div style={{marginTop:'16px'}}>
+                      <p style={{marginBottom: 16}}>
+                        <a 
+                          href="https://aka.ms/showflowtrackertemplate" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="showflow-btn success template-button"
+                          style={{
+                            textDecoration: 'none',
+                            display: 'block',
+                            width: '100%',
+                            maxWidth: '300px',
+                            margin: '0 auto',
+                            padding: '12px 16px',
+                            borderRadius: '4px',
+                            fontSize: '0.9em',
+                            textAlign: 'center',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          📋 Get Schedule Template
+                        </a>
+                      </p>
+                      <textarea
+                        className="showflow-textarea"
+                        placeholder="Paste your schedule here..."
+                        rows={4}
+                        value={inputValue}
+                        onChange={e => setInputValue(e.target.value)}
+                      />
+                      <div className="showflow-input-actions" style={{marginTop:'12px'}}>
+                        <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
+                        <label className="showflow-file-upload" style={{marginLeft:'8px'}}>
+                          <input type="file" accept=".csv" onChange={handleFileUpload} />
+                          <span>Upload .csv</span>
+                        </label>
+                      </div>
+                    </div>
+                  </details>
+                </section>
+
                 {/* Desktop: Original Layout */}
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
@@ -2364,8 +2411,9 @@ const ShowFlowAgent = () => {
             )}
           </section>
 
-          {/* Schedule Table Display - without redundant heading */}
+          {/* Current Schedule - Desktop View */}
           <section className="showflow-card">
+            <h2>Current Schedule</h2>
             {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
                   <p style={{fontSize:'1.08em',marginBottom:16}}>
                     You can build your schedule here by adding segments.<br />

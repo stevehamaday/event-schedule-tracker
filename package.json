@@ -4,13 +4,34 @@
   "description": "Event schedule tracker with shared events",
   "main": "simple-server.js",
   "scripts": {
-    "start": "node simple-server.js"
+    "start": "node simple-server.js",
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development"
   },
   "dependencies": {
+    "axios": "^1.12.0",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "xlsx": "^0.18.5"
   },
   "engines": {
     "node": ">=18.x"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-react": "^7.27.1",
+    "babel-loader": "^10.0.0",
+    "buffer": "^6.0.3",
+    "css-loader": "^7.1.2",
+    "file-loader": "^6.2.0",
+    "html-webpack-plugin": "^5.6.4",
+    "process": "^0.11.10",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
   }
 }

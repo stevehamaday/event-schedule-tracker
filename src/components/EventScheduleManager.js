@@ -1179,8 +1179,16 @@ const ShowFlowAgent = () => {
         {/* Mobile Nav - Clean logo banner only */}
         {isMobileDevice && (
           <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
-            <div style={{ height: '20px', textAlign: 'center', padding: '8px 0', fontSize: '14px', color: '#666' }}>
-              ShowFlow Logo (Hidden for Testing)
+            <div style={{ height: 'auto', textAlign: 'center', padding: '12px 0' }}>
+              <img
+                src={theme === 'dark' ? 'styles/showflowlogov3_dark.png' : 'styles/showflow-logo-new.png'}
+                alt="Show Flow Agent Logo"
+                style={{ 
+                  height: '32px', 
+                  maxWidth: '200px', 
+                  objectFit: 'contain'
+                }}
+              />
             </div>
           </nav>
         )}
@@ -1292,7 +1300,12 @@ const ShowFlowAgent = () => {
             </div>
         )}
 
-        <main className="showflow-main" style={{ display: presenterViewMode ? 'none' : 'block' }}>
+        <main className="showflow-main" style={{ 
+          display: presenterViewMode ? 'none' : 'block',
+          maxWidth: '100vw',
+          overflow: 'hidden',
+          boxSizing: 'border-box'
+        }}>
           {/* Floating sticky bar for current segment */}
           {currentIdx !== null && schedule[currentIdx] && (
             <div className="showflow-current-sticky" style={isMobile() ? { position: 'sticky', top: 64, zIndex: 900, background: '#FFB900', color: '#323130' } : {}}>
@@ -1324,10 +1337,15 @@ const ShowFlowAgent = () => {
                 className="showflow-btn success template-button"
                 style={{
                   textDecoration: 'none',
-                  display: 'inline-block',
-                  padding: '8px 16px',
+                  display: 'block',
+                  width: '100%',
+                  maxWidth: '300px',
+                  margin: '0 auto',
+                  padding: '12px 16px',
                   borderRadius: '4px',
-                  fontSize: '0.9em'
+                  fontSize: '0.9em',
+                  textAlign: 'center',
+                  boxSizing: 'border-box'
                 }}
               >
                 📋 Click for Schedule Template
@@ -1982,18 +2000,20 @@ const ShowFlowAgent = () => {
                 zIndex: 2002,
                 boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
                 borderTop: '1px solid #e0e4f7',
-                padding: '12px 0'
+                padding: '12px 16px',
+                maxWidth: '100vw',
+                boxSizing: 'border-box'
               }}>
-                <button className="showflow-btn" onClick={toggleTheme} style={{ width: '90%', margin: '12px auto', display: 'block' }}>
+                <button className="showflow-btn" onClick={toggleTheme} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>
                   {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
                 </button>
-                <button className="showflow-btn" onClick={togglePresenterView} style={{ width: '90%', margin: '12px auto', display: 'block', backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : '' }}>
+                <button className="showflow-btn" onClick={togglePresenterView} style={{ width: '100%', margin: '8px 0', display: 'block', backgroundColor: presenterViewMode ? '#6c7bbd' : '', color: presenterViewMode ? '#fff' : '', boxSizing: 'border-box' }}>
                   {presenterViewMode ? '← Normal View' : '👁️ Presenter View'}
                 </button>
-                <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Undo</button>
-                <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Redo</button>
-                <button className="showflow-btn danger" onClick={handleResetAll} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Reset All</button>
-                <button className="showflow-btn" onClick={() => setMobileFooterMenuOpen(false)} style={{ width: '90%', margin: '12px auto', display: 'block' }}>Close</button>
+                <button className="showflow-btn" onClick={handleUndo} disabled={history.length === 0} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Undo</button>
+                <button className="showflow-btn" onClick={handleRedo} disabled={future.length === 0} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Redo</button>
+                <button className="showflow-btn danger" onClick={handleResetAll} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Reset All</button>
+                <button className="showflow-btn" onClick={() => setMobileFooterMenuOpen(false)} style={{ width: '100%', margin: '8px 0', display: 'block', boxSizing: 'border-box' }}>Close</button>
               </div>
             )}
           </footer>

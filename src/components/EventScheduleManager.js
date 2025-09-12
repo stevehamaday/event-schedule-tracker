@@ -1351,25 +1351,50 @@ const ShowFlowAgent = () => {
                 <button 
                   className="showflow-btn"
                   style={{
-                    background: 'rgba(255,255,255,0.2)',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    color: 'white',
+                    background: 'rgba(255,255,255,0.9)',
+                    border: '2px solid rgba(255,255,255,0.5)',
+                    color: '#6c7bbd',
                     padding: '8px 16px',
-                    fontSize: '0.9em'
+                    fontSize: '0.9em',
+                    fontWeight: '600',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                   }}
-                  onClick={() => setShowMobileEdit(true)}
+                  onClick={() => {
+                    // Show mobile menu
+                    const menuActions = ['Edit Mode', 'Full Screen', 'Load Different Event'];
+                    const choice = prompt(`Menu:\n${menuActions.map((action, i) => `${i+1}. ${action}`).join('\n')}\n\nEnter number:`);
+                    
+                    if (choice === '1') {
+                      setShowMobileEdit(true);
+                    } else if (choice === '2') {
+                      setPresenterViewMode(true);
+                    } else if (choice === '3') {
+                      if (sharedEvents.length > 0) {
+                        const eventNames = sharedEvents.map(e => e.name);
+                        const eventChoice = prompt(`Load Event:\n${eventNames.map((name, i) => `${i+1}. ${name}`).join('\n')}\n\nEnter number:`);
+                        const index = parseInt(eventChoice) - 1;
+                        if (index >= 0 && index < sharedEvents.length) {
+                          loadSharedEvent(sharedEvents[index].id);
+                        }
+                      } else {
+                        alert('No saved events available. Create one in Edit Mode first.');
+                      }
+                    }
+                  }}
                 >
-                  ⚙️ Edit Mode
+                  ☰ Menu
                 </button>
                 {currentSharedEventId && (
                   <button 
                     className="showflow-btn"
                     style={{
-                      background: 'rgba(255,255,255,0.2)',
-                      border: '1px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(34, 197, 94, 0.9)',
+                      border: '2px solid rgba(34, 197, 94, 0.5)',
                       color: 'white',
                       padding: '8px 16px',
-                      fontSize: '0.9em'
+                      fontSize: '0.9em',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                     }}
                     onClick={() => updateSharedEvent()}
                     disabled={isLoading}
@@ -1395,7 +1420,7 @@ const ShowFlowAgent = () => {
                 <div>
                   <h2 style={{fontSize: '1.8em', marginBottom: '16px'}}>No Schedule Loaded</h2>
                   <p style={{fontSize: '1.1em', opacity: '0.9', marginBottom: '24px', lineHeight: '1.4'}}>
-                    Load a shared event or<br />switch to edit mode to create a schedule
+                    Load a shared event to start tracking
                   </p>
                   <button 
                     className="showflow-btn success"
@@ -1406,11 +1431,23 @@ const ShowFlowAgent = () => {
                       fontSize: '1.1em',
                       fontWeight: '600',
                       border: 'none',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                     }}
-                    onClick={() => setShowMobileEdit(true)}
+                    onClick={() => {
+                      if (sharedEvents.length > 0) {
+                        const eventNames = sharedEvents.map(e => e.name);
+                        const eventChoice = prompt(`Load Event:\n${eventNames.map((name, i) => `${i+1}. ${name}`).join('\n')}\n\nEnter number:`);
+                        const index = parseInt(eventChoice) - 1;
+                        if (index >= 0 && index < sharedEvents.length) {
+                          loadSharedEvent(sharedEvents[index].id);
+                        }
+                      } else {
+                        alert('No saved events available. Use Menu → Edit Mode to create one.');
+                      }
+                    }}
                   >
-                    ⚙️ Set Up Schedule
+                    📂 Load an Event
                   </button>
                 </div>
               </div>
@@ -1553,39 +1590,18 @@ const ShowFlowAgent = () => {
                     className="showflow-btn"
                     style={{
                       flex: 1,
-                      background: 'rgba(255,255,255,0.2)',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      color: 'white',
+                      background: 'rgba(255,255,255,0.9)',
+                      border: '2px solid rgba(255,255,255,0.5)',
+                      color: '#6c7bbd',
                       padding: '16px',
-                      fontSize: '1em'
+                      fontSize: '1em',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                     }}
                     onClick={() => setPresenterViewMode(true)}
                   >
                     📺 Full Screen
                   </button>
-                  {sharedEvents.length > 0 && (
-                    <button 
-                      className="showflow-btn"
-                      style={{
-                        flex: 1,
-                        background: 'rgba(255,255,255,0.2)',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        color: 'white',
-                        padding: '16px',
-                        fontSize: '1em'
-                      }}
-                      onClick={() => {
-                        const eventNames = sharedEvents.map(e => e.name);
-                        const choice = prompt(`Load event:\n${eventNames.map((name, i) => `${i+1}. ${name}`).join('\n')}\n\nEnter number:`);
-                        const index = parseInt(choice) - 1;
-                        if (index >= 0 && index < sharedEvents.length) {
-                          loadSharedEvent(sharedEvents[index].id);
-                        }
-                      }}
-                    >
-                      📂 Load Event
-                    </button>
-                  )}
                 </div>
               </div>
             )}

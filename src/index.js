@@ -1,5 +1,5 @@
 // Polyfill process and Buffer for browser compatibility
-import process from 'process/browser';
+import process from 'process/browser.js';
 import { Buffer } from 'buffer';
 if (typeof window !== 'undefined') {
   window.process = process;
@@ -8,8 +8,9 @@ if (typeof window !== 'undefined') {
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
-import '../public/styles/main.css';
+import App from './App.js';
+// Use main stylesheet (includes production styles)
+import './styles/main.css';
 
 ReactDOM.render(
   <React.StrictMode>

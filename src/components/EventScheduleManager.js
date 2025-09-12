@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './PresenterView.css'; // Import presenter view styles
-import { parseExcelFile } from '../utils/excelParser'; // This path must be correct
-import { parseScheduleFile, parseClipboardData } from '../utils/enhancedParser';
-import DataPreviewModal from './DataPreviewModal';
+import { parseExcelFile } from '../utils/excelParser.js'; // This path must be correct
+import { parseScheduleFile, parseClipboardData } from '../utils/enhancedParser.js';
+import DataPreviewModal from './DataPreviewModal.js';
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 
@@ -214,6 +214,173 @@ const ShowFlowAgent = () => {
 
   // Debug: set now to a custom date/time
   const [debugNow, setDebugNow] = useState(null);
+
+  // New: Shared event functionality
+  const [sharedEvents, setSharedEvents] = useState([]);
+  const [currentSharedEventId, setCurrentSharedEventId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected'); // 'connected', 'loading', 'error', 'disconnected'
+
+  // API Base URL - in production this would be your Azure Web App URL
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? window.location.origin  // Use same domain in production
+    : 'http://localhost:5001'; // Local development
+
+  // Load shared events from backend
+  const loadSharedEvents = async () => {
+    try {
+      setIsLoading(true);
+      setConnectionStatus('loading');
+      const response = await axios.get(`${API_BASE_URL}/api/events`);
+      setSharedEvents(response.data);
+      setConnectionStatus('connected');
+    } catch (error) {
+      console.error('Failed to load shared events:', error);
+      setConnectionStatus('error');
+      setSummary(prev => [...prev, `Error loading shared events: ${error.message}`]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save current schedule as shared event
+  const saveAsSharedEvent = async (eventName) => {
+    if (!eventName || !eventName.trim()) {
+      alert('Please provide a name for the shared event');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const eventData = {
+        name: eventName.trim(),
+        schedule: schedule,
+        metadata: {
+          title: title,
+          createdBy: 'User', // Could be enhanced with actual user authentication
+          createdAt: new Date().toISOString(),
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      const response = await axios.post(`${API_BASE_URL}/api/events/${eventName.trim()}`, eventData);
+      
+      // Refresh shared events list
+      await loadSharedEvents();
+      
+      setCurrentSharedEventId(eventName.trim());
+      setSummary(prev => [...prev, `Shared event '${eventName}' saved successfully`]);
+    } catch (error) {
+      console.error('Failed to save shared event:', error);
+      setSummary(prev => [...prev, `Error saving shared event: ${error.message}`]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load a shared event
+  const loadSharedEvent = async (eventId) => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/events`);
+      const events = response.data;
+      const selectedEvent = events.find(event => event.id === eventId);
+      
+      if (selectedEvent) {
+        // Push current state to history before loading
+        pushHistory(schedule);
+        
+        // Load the shared event data
+        setSchedule(selectedEvent.schedule || []);
+        setTitle(selectedEvent.metadata?.title || selectedEvent.name);
+        setCurrentSharedEventId(eventId);
+        
+        setSummary(prev => [...prev, `Loaded shared event '${selectedEvent.name}'`]);
+      } else {
+        throw new Error('Event not found');
+      }
+    } catch (error) {
+      console.error('Failed to load shared event:', error);
+      setSummary(prev => [...prev, `Error loading shared event: ${error.message}`]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update current shared event (if one is loaded)
+  const updateSharedEvent = async () => {
+    if (!currentSharedEventId) {
+      // Save as new shared event
+      const eventName = prompt('Enter name for new shared event:');
+      if (eventName) {
+        await saveAsSharedEvent(eventName);
+      }
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const eventData = {
+        name: currentSharedEventId,
+        schedule: schedule,
+        metadata: {
+          title: title,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      await axios.post(`${API_BASE_URL}/api/events/${currentSharedEventId}`, eventData);
+      
+      setSummary(prev => [...prev, `Updated shared event '${currentSharedEventId}'`]);
+    } catch (error) {
+      console.error('Failed to update shared event:', error);
+      setSummary(prev => [...prev, `Error updating shared event: ${error.message}`]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Delete a shared event
+  const deleteSharedEvent = async (eventId) => {
+    if (!confirm(`Are you sure you want to delete shared event '${eventId}'?`)) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await axios.delete(`${API_BASE_URL}/api/events/${eventId}`);
+      
+      // Refresh shared events list
+      await loadSharedEvents();
+      
+      // Clear current shared event if it was deleted
+      if (currentSharedEventId === eventId) {
+        setCurrentSharedEventId(null);
+      }
+      
+      setSummary(prev => [...prev, `Deleted shared event '${eventId}'`]);
+    } catch (error) {
+      console.error('Failed to delete shared event:', error);
+      setSummary(prev => [...prev, `Error deleting shared event: ${error.message}`]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load shared events on component mount
+  useEffect(() => {
+    loadSharedEvents();
+    
+    // Optional: Set up periodic refresh for real-time collaboration
+    const interval = setInterval(() => {
+      if (connectionStatus === 'connected') {
+        loadSharedEvents();
+      }
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
   const handleDebugNow = () => {
     const input = prompt('Enter a time (e.g., 10:05 AM):', '10:05 AM');
     if (!input) return;
@@ -815,19 +982,9 @@ const ShowFlowAgent = () => {
         {/* Mobile Nav - Clean logo banner only */}
         {isMobileDevice && (
           <nav className="showflow-mobile-nav" style={{position:'relative',zIndex:1100}}>
-            <img
-              src="styles/showflow-logo.png"
-              alt="ShowFlow Logo"
-              className="showflow-logo"
-              style={{
-                maxWidth: '180px',
-                maxHeight: '40px',
-                height: 'auto',
-                display: 'block',
-                margin: '0 auto',
-                padding: '8px 0'
-              }}
-            />
+            <div style={{ height: '20px', textAlign: 'center', padding: '8px 0', fontSize: '14px', color: '#666' }}>
+              ShowFlow Logo (Hidden for Testing)
+            </div>
           </nav>
         )}
         {/* Mobile nav drawer (simple) */}
@@ -1001,7 +1158,139 @@ const ShowFlowAgent = () => {
                 <span>Upload .csv</span>
               </label>
             </div>
-          </section>          {/* Schedule Table Display */}
+          </section>
+
+          {/* Shared Events Section */}
+          <section className="showflow-card">
+            <h2>
+              Shared Events
+              <span style={{ marginLeft: 8, fontSize: '0.8em', color: connectionStatus === 'connected' ? '#107c10' : connectionStatus === 'error' ? '#d13438' : '#666' }}>
+                {connectionStatus === 'connected' && '🟢 Connected'}
+                {connectionStatus === 'loading' && '🟡 Loading...'}
+                {connectionStatus === 'error' && '🔴 Connection Error'}
+                {connectionStatus === 'disconnected' && '⚪ Disconnected'}
+              </span>
+            </h2>
+            <p style={{fontSize: '0.85em', color: '#666', marginBottom: 16}}>
+              <em>Collaborate on events with your team • Auto-syncs every 30 seconds</em>
+            </p>
+            
+            {/* Current shared event indicator */}
+            {currentSharedEventId && (
+              <div style={{ 
+                background: '#f3f2f1', 
+                border: '1px solid #e1dfdd', 
+                borderRadius: '4px', 
+                padding: '8px 12px', 
+                marginBottom: '12px',
+                fontSize: '0.9em'
+              }}>
+                <strong>📤 Currently editing:</strong> {currentSharedEventId}
+                <button 
+                  className="showflow-btn" 
+                  style={{ marginLeft: '12px', padding: '4px 8px', fontSize: '0.8em' }}
+                  onClick={updateSharedEvent}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            )}
+
+            {/* Shared event controls */}
+            <div className="showflow-input-actions" style={{ marginBottom: '16px' }}>
+              <button 
+                className="showflow-btn success" 
+                onClick={() => {
+                  const eventName = prompt('Enter name for new shared event:');
+                  if (eventName) saveAsSharedEvent(eventName);
+                }}
+                disabled={isLoading}
+              >
+                💾 Save as Shared
+              </button>
+              <button 
+                className="showflow-btn" 
+                onClick={loadSharedEvents}
+                disabled={isLoading}
+              >
+                🔄 Refresh List
+              </button>
+              {!currentSharedEventId && (
+                <button 
+                  className="showflow-btn warning" 
+                  onClick={() => {
+                    const eventName = prompt('Enter name for new shared event:');
+                    if (eventName) saveAsSharedEvent(eventName);
+                  }}
+                  disabled={isLoading}
+                >
+                  📤 Share Current
+                </button>
+              )}
+            </div>
+
+            {/* Shared events list */}
+            {sharedEvents.length > 0 ? (
+              <div style={{ border: '1px solid #e1dfdd', borderRadius: '4px', maxHeight: '200px', overflow: 'auto' }}>
+                {sharedEvents.map((event) => (
+                  <div 
+                    key={event.id} 
+                    style={{ 
+                      padding: '8px 12px', 
+                      borderBottom: '1px solid #f3f2f1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: event.id === currentSharedEventId ? '#fff4ce' : 'white'
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <strong>{event.name}</strong>
+                      {event.metadata && (
+                        <div style={{ fontSize: '0.8em', color: '#666' }}>
+                          Created: {new Date(event.metadata.createdAt).toLocaleDateString()}
+                          {event.metadata.lastModified && ` • Modified: ${new Date(event.metadata.lastModified).toLocaleDateString()}`}
+                          {event.schedule && ` • ${event.schedule.length} segments`}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button 
+                        className="showflow-btn" 
+                        style={{ padding: '4px 8px', fontSize: '0.8em' }}
+                        onClick={() => loadSharedEvent(event.id)}
+                        disabled={isLoading}
+                      >
+                        📥 Load
+                      </button>
+                      <button 
+                        className="showflow-btn danger" 
+                        style={{ padding: '4px 8px', fontSize: '0.8em' }}
+                        onClick={() => deleteSharedEvent(event.id)}
+                        disabled={isLoading}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '24px', 
+                color: '#666', 
+                fontSize: '0.9em',
+                border: '1px dashed #e1dfdd',
+                borderRadius: '4px'
+              }}>
+                {isLoading ? 'Loading shared events...' : 'No shared events yet. Save your current schedule to get started!'}
+              </div>
+            )}
+          </section>
+
+          {/* Schedule Table Display */}
           <section className="showflow-card">
             <h2>Current Schedule</h2>
             {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>

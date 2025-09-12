@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { validateSchedule, generateQualityReport, autoCleanSchedule } from '../utils/dataValidation';
+import { validateSchedule, generateQualityReport, autoCleanSchedule } from '../utils/dataValidation.js';
 
 const DataPreviewModal = ({ 
   isOpen, 

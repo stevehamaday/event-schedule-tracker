@@ -1,11 +1,20 @@
-const path = require('path');
-const webpack = require('webpack');
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import path from 'path';
+import webpack from 'webpack';
+import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
-module.exports = {
+const require = createRequire(import.meta.url);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default {
     entry: './src/index.js',
+    cache: false,
     output: {
-        path: path.resolve(__dirname, 'docs/scripts'),
-        filename: 'bundle.js',
+        path: path.resolve(__dirname, 'docs'),
+        filename: 'bundle.[contenthash].js',
         publicPath: '/' // SPA routing
     },
     module: {
@@ -39,13 +48,20 @@ module.exports = {
         ]
     },
     devServer: {
-        contentBase: path.join(__dirname, 'public'), // Use 'public' for local dev
+        static: {
+            directory: path.join(__dirname, 'public'), // Use 'public' for local dev
+        },
         compress: true,
-        port: 9000,
+        port: 3000,
+        host: 'localhost',
         open: true,
         historyApiFallback: true // SPA routing
     },
     plugins: [
+        new HtmlWebpackPlugin({
+            template: './public/index.html',
+            filename: './index.html'
+        }),
         new webpack.ProvidePlugin({
             process: 'process/browser.js',
             Buffer: ['buffer', 'Buffer'],
@@ -54,8 +70,8 @@ module.exports = {
     resolve: {
         extensions: ['.js', '.jsx'],
         fallback: {
-            process: require.resolve('process/browser.js'),
-            buffer: require.resolve('buffer/'),
-        },
-    },
+            process: 'process/browser',
+            buffer: 'buffer'
+        }
+    }
 };

@@ -1,6 +1,6 @@
 import React from 'react';
-import SessionAdjuster from './SessionAdjuster';
-import CountdownTimer from './CountdownTimer';
+import SessionAdjuster from './SessionAdjuster.js';
+import CountdownTimer from './CountdownTimer.js';
 
 const EventList = ({ events, onSessionDurationChange }) => {
     return (

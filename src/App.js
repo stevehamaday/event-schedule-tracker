@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import EventList from './components/EventList';
-import SessionAdjuster from './components/SessionAdjuster';
-import CountdownTimer from './components/CountdownTimer';
-import { scheduleNotification } from './utils/notificationHelper';
-import ShowFlowAgent from './components/EventScheduleManager';
-import PresenterView from './components/PresenterView';
+import EventList from './components/EventList.js';
+import SessionAdjuster from './components/SessionAdjuster.js';
+import CountdownTimer from './components/CountdownTimer.js';
+import { scheduleNotification } from './utils/notificationHelper.js';
+import ShowFlowAgent from './components/EventScheduleManager.js';
+import PresenterView from './components/PresenterView.js';
 
 const App = () => {
     const [events, setEvents] = useState([]);

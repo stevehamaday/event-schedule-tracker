@@ -170,6 +170,7 @@ const ShowFlowAgent = () => {
   const [summary, setSummary] = useState([]);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [inputValue, setInputValue] = useState('');
+  const [title, setTitle] = useState(''); // Event title state
 
   // Inline editing state
   const [editIdx, setEditIdx] = useState(null);
@@ -252,27 +253,36 @@ const ShowFlowAgent = () => {
 
     try {
       setIsLoading(true);
+      console.log('Saving shared event:', eventName);
+      console.log('API_BASE_URL:', API_BASE_URL);
+      console.log('Current schedule:', schedule);
+      
       const eventData = {
         name: eventName.trim(),
         schedule: schedule,
         metadata: {
-          title: title,
+          title: title || eventName.trim(), // Use title if available, otherwise use eventName
           createdBy: 'User', // Could be enhanced with actual user authentication
           createdAt: new Date().toISOString(),
           lastModified: new Date().toISOString()
         }
       };
 
+      console.log('Event data to save:', eventData);
       const response = await axios.post(`${API_BASE_URL}/api/events/${eventName.trim()}`, eventData);
+      console.log('Save response:', response);
       
       // Refresh shared events list
       await loadSharedEvents();
       
       setCurrentSharedEventId(eventName.trim());
       setSummary(prev => [...prev, `Shared event '${eventName}' saved successfully`]);
+      alert(`Shared event '${eventName}' saved successfully!`); // Temporary user feedback
     } catch (error) {
       console.error('Failed to save shared event:', error);
+      console.error('Error details:', error.response || error);
       setSummary(prev => [...prev, `Error saving shared event: ${error.message}`]);
+      alert(`Error saving shared event: ${error.message}`); // Temporary user feedback
     } finally {
       setIsLoading(false);
     }
@@ -324,7 +334,7 @@ const ShowFlowAgent = () => {
         name: currentSharedEventId,
         schedule: schedule,
         metadata: {
-          title: title,
+          title: title || currentSharedEventId, // Use title if available, otherwise use currentSharedEventId
           lastModified: new Date().toISOString()
         }
       };

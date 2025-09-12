@@ -2042,11 +2042,10 @@ const ShowFlowAgent = () => {
               <section className="showflow-card">
                 <details>
                   <summary style={{fontSize:'1.1em',fontWeight:'500',padding:'8px 0',cursor:'pointer'}}>
-                    📝 Import & Collaboration
+                    � Import
                   </summary>
                   <div style={{marginTop:'16px'}}>
                     {/* Import Section */}
-                    <h3 style={{fontSize:'1em',marginBottom:'12px'}}>Import Schedule</h3>
                     <p style={{marginBottom: 16}}>
                       <a 
                         href="https://aka.ms/showflowtrackertemplate" 
@@ -2080,81 +2079,8 @@ const ShowFlowAgent = () => {
                       <button className="showflow-btn success" onClick={handleParseSchedule}>Parse Schedule</button>
                       <label className="showflow-file-upload" style={{marginLeft:'8px'}}>
                         <input type="file" accept=".csv" onChange={handleFileUpload} />
-                        <span>Upload CSV</span>
+                        <span>Upload .csv</span>
                       </label>
-                    </div>
-
-                    {/* Simplified Shared Events for Mobile */}
-                    <div style={{marginTop:'24px',borderTop:'1px solid #e1dfdd',paddingTop:'16px'}}>
-                      <h3 style={{fontSize:'1em',marginBottom:'12px'}}>
-                        Team Collaboration 
-                        <span style={{ marginLeft: 8, fontSize: '0.8em', color: connectionStatus === 'connected' ? '#107c10' : '#666' }}>
-                          {connectionStatus === 'connected' ? '🟢' : '⚪'}
-                        </span>
-                      </h3>
-                      {currentSharedEventId ? (
-                        <div style={{background:'#fff4ce',padding:'12px',borderRadius:'4px',marginBottom:'12px'}}>
-                          <div style={{fontSize:'0.9em'}}>📤 <strong>{currentSharedEventId}</strong></div>
-                          <button 
-                            className="showflow-btn" 
-                            style={{ marginTop: '8px', padding: '6px 12px', fontSize: '0.8em' }}
-                            onClick={updateSharedEvent}
-                            disabled={isLoading}
-                          >
-                            {isLoading ? 'Saving...' : 'Save Changes'}
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          className="showflow-btn success" 
-                          onClick={() => {
-                            const eventName = prompt('Enter name for shared event:');
-                            if (eventName) saveAsSharedEvent(eventName);
-                          }}
-                          disabled={isLoading}
-                          style={{width:'100%',marginBottom:'12px'}}
-                        >
-                          💾 Share This Schedule
-                        </button>
-                      )}
-                      {sharedEvents.length > 0 && (
-                        <details style={{marginTop:'12px'}}>
-                          <summary style={{fontSize:'0.9em',cursor:'pointer'}}>
-                            📂 Shared Events ({sharedEvents.length})
-                          </summary>
-                          <div style={{maxHeight:'150px',overflow:'auto',marginTop:'8px'}}>
-                            {sharedEvents.map((event) => (
-                              <div key={event.id} style={{
-                                padding:'8px',
-                                background:event.id === currentSharedEventId ? '#fff4ce' : '#f8f9fa',
-                                marginBottom:'4px',
-                                borderRadius:'4px',
-                                fontSize:'0.8em'
-                              }}>
-                                <div style={{fontWeight:'500'}}>{event.name}</div>
-                                <div style={{display:'flex',gap:'8px',marginTop:'4px'}}>
-                                  <button 
-                                    className="showflow-btn" 
-                                    style={{padding:'2px 8px',fontSize:'0.7em'}}
-                                    onClick={() => loadSharedEvent(event.id)}
-                                    disabled={isLoading}
-                                  >
-                                    📥 Load
-                                  </button>
-                                  <button 
-                                    className="showflow-btn danger" 
-                                    style={{padding:'2px 8px',fontSize:'0.7em'}}
-                                    onClick={() => deleteSharedEvent(event.id)}
-                                    disabled={isLoading}
-                                  >
-                                    🗑️
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </details>
-                      )}
                     </div>
                   </div>
                 </details>
@@ -2199,46 +2125,6 @@ const ShowFlowAgent = () => {
             <p style={{fontSize: '0.85em', color: '#666', marginBottom: 16}}>
               <em>Collaborate on events with your team • Auto-syncs every 30 seconds</em>
             </p>
-            
-            {/* Quick Import Section */}
-            <details style={{ marginBottom: '16px', border: '1px solid #e1dfdd', borderRadius: '4px', padding: '12px' }}>
-              <summary style={{ cursor: 'pointer', fontWeight: '500', fontSize: '0.9em', color: '#6c7bbd' }}>
-                📋 Import New Schedule
-              </summary>
-              <div style={{ marginTop: '12px' }}>
-                <p style={{ fontSize: '0.8em', color: '#666', marginBottom: '8px' }}>
-                  <a 
-                    href="https://aka.ms/showflowtrackertemplate" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ color: '#6c7bbd', textDecoration: 'none' }}
-                  >
-                    📋 Get Schedule Template
-                  </a>
-                </p>
-                <textarea
-                  className="showflow-textarea"
-                  placeholder="Paste your schedule here..."
-                  rows={3}
-                  value={inputValue}
-                  onChange={e => setInputValue(e.target.value)}
-                  style={{ fontSize: '0.85em' }}
-                />
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                  <button 
-                    className="showflow-btn success" 
-                    onClick={handleParseSchedule}
-                    style={{ padding: '6px 12px', fontSize: '0.85em' }}
-                  >
-                    Parse Schedule
-                  </button>
-                  <label className="showflow-file-upload" style={{ fontSize: '0.85em' }}>
-                    <input type="file" accept=".csv" onChange={handleFileUpload} />
-                    <span>Upload .csv</span>
-                  </label>
-                </div>
-              </div>
-            </details>
             
             {/* Current shared event indicator */}
             {currentSharedEventId && (
@@ -2478,9 +2364,292 @@ const ShowFlowAgent = () => {
             )}
           </section>
 
-          {/* Schedule Table Display */}
+          {/* Schedule Table Display - without redundant heading */}
           <section className="showflow-card">
-            <h2>Current Schedule</h2>
+            {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
+                  <p style={{fontSize:'1.08em',marginBottom:16}}>
+                    You can build your schedule here by adding segments.<br />
+                    <span style={{color:'#6c7bbd',fontSize:'0.98em'}}>Click below to get started!</span>
+                  </p>                  <button
+                    className="showflow-btn success"
+                    style={{fontSize:'1.08em',padding:'12px 32px',marginTop:8}}
+                    onClick={() => handleAddSegment(0)}
+                  >
+                    + Create a New Schedule
+                  </button>
+                </div>
+            ) : (
+              <>
+                {hasNotesInSchedule() && (
+                  <button 
+                    className="showflow-btn" 
+                    style={{marginBottom:12}} 
+                    onClick={handleToggleAllNotes}
+                  >
+                    {allNotesExpanded ? 'Collapse All Notes' : 'Expand All Notes'}
+                  </button>
+                )}
+              <div className="showflow-table-container">
+                <table className="showflow-table">                  <thead>
+                    <tr>
+                      <th></th> {/* Alert icon column */}
+                      <th>Time</th>
+                      <th>Duration</th>
+                      <th>Segment</th>
+                      <th>Presenter</th>
+                      <th colSpan={5}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schedule.map((seg, i) => (
+                      <React.Fragment key={i}>
+                        <tr
+                          draggable
+                          onDragStart={() => handleDragStart(i)}
+                          onDragOver={handleDragOver}
+                          onDrop={() => handleDrop(i)}
+                          className={
+                            (draggedIndex === i ? 'dragged ' : '') +
+                            (i === currentIdx ? 'current-segment ' : '') +
+                            (i === currentIdx+1 ? 'next-segment ' : '') +
+                            (i === overrunIdx ? 'overrun' : '')
+                          }
+                          style={{ cursor: 'pointer', position: 'relative' }}
+                          onClick={() => setExpandedNotesIdx(expandedNotesIdx === i ? null : i)}
+                          title="Click to reveal or add notes"
+                        >                          {/* Render icons on the right for mobile, left for desktop */}
+                          {!isMobile() && (
+                            <>
+                              {/* Alert icon */}
+                              <td style={{textAlign:'center',width:32}}>
+                                {i === currentIdx ? (
+                                  <span className="showflow-current-pulse" title="Current segment" />
+                                ) : (
+                                  <button
+                                    className="showflow-btn"
+                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
+                                    title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
+                                    onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
+                                    tabIndex={0}
+                                  >
+                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#00A4EF':'#bbb'}}>
+                                      {alertSegments.includes(i) ? '🔔' : '🔕'}
+                                    </span>
+                                  </button>                                )}
+                              </td>
+                            </>
+                          )}                          {/* Editable fields */}
+                          {editIdx === i ? (
+                            <>
+                              <td>
+                                <input
+                                  name="time"
+                                  value={editValues.time || ''}
+                                  onChange={handleEditChange}
+                                  className="showflow-input"
+                                  style={{width:'6em'}}
+                                  placeholder="9:00 AM"
+                                  title="Edit start time - subsequent segments will be automatically adjusted"
+                                  autoFocus
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  name="duration"
+                                  value={editValues.duration || ''}
+                                  onChange={handleEditChange}
+                                  className="showflow-input"
+                                  style={{width:'5em'}}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  name="segment"
+                                  value={editValues.segment || ''}
+                                  onChange={handleEditChange}
+                                  className="showflow-input"
+                                  style={{width:'12em'}}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  name="presenter"
+                                  value={editValues.presenter || ''}
+                                  onChange={handleEditChange}
+                                  className="showflow-input"
+                                  style={{width:'10em'}}
+                                />
+                              </td>
+                              {/* Save/Cancel buttons */}
+                              <td colSpan={5} style={{minWidth:120}}>
+                                <button className="showflow-btn success" onClick={e => { e.stopPropagation(); handleSaveEdit(i); }}>Save</button>
+                                <button className="showflow-btn" onClick={e => { e.stopPropagation(); handleCancelEdit(); }}>Cancel</button>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td style={{whiteSpace:'nowrap'}}>{seg.time}</td>
+                              <td>{seg.duration} min</td>
+                              <td style={{minWidth:'200px'}}>
+                                <strong>{seg.segment}</strong>
+                                {seg.presenter && <div style={{fontSize:'0.8em',color:'#888'}}>by {seg.presenter}</div>}
+                              </td>
+                              <td>{seg.presenter}</td>
+                              <td style={{textAlign:'center',width:40}}>
+                                <button
+                                  className="showflow-btn"
+                                  onClick={e => { e.stopPropagation(); handleEdit(i); }}
+                                  title="Edit segment"
+                                  tabIndex={0}
+                                >
+                                  ✏️
+                                </button>
+                              </td>
+                              <td style={{textAlign:'center',width:40}}>
+                                <button
+                                  className="showflow-btn"
+                                  onClick={e => { e.stopPropagation(); handleAddSegment(i); }}
+                                  title="Add segment after this one"
+                                  tabIndex={0}
+                                >
+                                  ➕
+                                </button>
+                              </td>
+                              <td style={{textAlign:'center',width:40}}>
+                                <button
+                                  className="showflow-btn danger"
+                                  onClick={e => { e.stopPropagation(); handleRemoveSegment(i); }}
+                                  title="Remove segment"
+                                  tabIndex={0}
+                                >
+                                  🗑️
+                                </button>
+                              </td>
+                              <td style={{textAlign:'center',width:40}}>
+                                <button
+                                  className="showflow-btn"
+                                  onClick={e => { e.stopPropagation(); addNote(i); }}
+                                  title="Add note"
+                                  tabIndex={0}
+                                >
+                                  📝
+                                </button>
+                              </td>
+                              {/* Icon-only column on mobile for alerts */}
+                              {isMobile() && (
+                                <td style={{textAlign:'center',width:40}}>
+                                  <button
+                                    className="showflow-btn"
+                                    style={{background:'none',border:'none',padding:0,cursor:'pointer'}}
+                                    title={alertSegments.includes(i) ? 'Alert enabled' : 'Enable alert'}
+                                    onClick={e => { e.stopPropagation(); toggleAlertSegment(i); }}
+                                    tabIndex={0}
+                                  >
+                                    <span style={{fontSize:'1.2em',color:alertSegments.includes(i)?'#00A4EF':'#bbb'}}>
+                                      {alertSegments.includes(i) ? '🔔' : '🔕'}
+                                    </span>
+                                  </button>
+                                </td>
+                              )}
+                            </>
+                          )}
+                        </tr>
+                        {/* Expandable notes row */}
+                        {(allNotesExpanded || expandedNotesIdx === i) && editIdx !== i && (
+                          <tr>
+                            <td colSpan={isMobile() ? 9 : 8} style={{background:'#f8fafd',padding:'12px'}}>
+                              <input
+                                type="text"
+                                placeholder="Add notes or feedback..."
+                                value={seg.notes || ''}
+                                onChange={e => {
+                                  const updated = schedule.map((s, idx) => idx === i ? { ...s, notes: e.target.value } : s);
+                                  pushHistory(schedule);
+                                  setSchedule(updated);
+                                }}
+                                className="showflow-input"
+                                style={{width:'100%'}}
+                                autoFocus
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Add Segment Button */}
+              <button 
+                className="showflow-btn success" 
+                onClick={() => handleAddSegment(schedule.length)}
+                style={{marginTop:'16px'}}
+              >
+                + Add Segment
+              </button>
+
+              {/* Quick Add Options */}
+              {schedule.length > 0 && (
+                <div style={{
+                  marginTop: '12px',
+                  padding: '12px',
+                  background: '#f8fafd',
+                  borderRadius: '6px',
+                  border: '1px solid #e1e5e9'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    marginBottom: '8px',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center'
+                  }}>
+                    <button
+                      className="showflow-btn success"
+                      onClick={() => handleAddSegment(schedule.length)}
+                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                    >
+                      + Add at End
+                    </button>
+                    
+                    <button
+                      className="showflow-btn success"
+                      onClick={() => handleAddSegment(0)}
+                      style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                    >
+                      + Add at Beginning
+                    </button>
+
+                    {schedule.length > 1 && (
+                      <button
+                        className="showflow-btn success"
+                        onClick={() => handleAddSegment(Math.floor(schedule.length / 2))}
+                        style={{ fontSize: '0.9em', padding: '8px 16px' }}
+                      >
+                        + Insert in Middle
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '0.85em', color: '#64748b', lineHeight: '1.4' }}>
+                    <div style={{ marginBottom: '4px' }}>
+                      💡 <strong>Quick tips:</strong> Click the <strong>+</strong> button next to any segment to add after it
+                    </div>
+                    <div>
+                      ⌨️ <strong>Keyboard shortcuts:</strong> Press <kbd style={{
+                        background: '#e2e8f0',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.8em',
+                        border: '1px solid #cbd5e1'
+                      }}>Ctrl+Enter</kbd> to add segments quickly
+                    </div>
+                  </div>
+                </div>
+              )}
+              </>
+            )}
             {schedule.length === 0 ? (              <div className="showflow-empty" style={{textAlign:'center',padding:'32px 0'}}>
                   <p style={{fontSize:'1.08em',marginBottom:16}}>
                     You can build your schedule here by adding segments.<br />

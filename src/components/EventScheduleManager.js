@@ -1095,6 +1095,93 @@ const ShowFlowAgent = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Show event selector with radio buttons
+  const showEventSelector = () => {
+    if (sharedEvents.length === 0) {
+      alert('No saved events available. Create one in Edit Mode first.');
+      return;
+    }
+
+    // Create a modal-like dialog content
+    const eventOptions = sharedEvents.map((event, index) => 
+      `<label style="display: block; margin: 8px 0; padding: 12px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+        <input type="radio" name="eventChoice" value="${index}" style="margin-right: 8px;"> 
+        <strong>${event.name}</strong>
+        ${event.metadata ? `<br><small>Created: ${new Date(event.metadata.createdAt).toLocaleDateString()}</small>` : ''}
+      </label>`
+    ).join('');
+
+    const dialogHTML = `
+      <div style="font-family: system-ui; max-width: 400px;">
+        <h3 style="margin-top: 0;">Select Event</h3>
+        <form id="eventForm">
+          ${eventOptions}
+          <div style="margin: 16px 0; padding: 12px; background: #fff3cd; border-radius: 4px;">
+            <label style="display: block; cursor: pointer;">
+              <input type="radio" name="eventChoice" value="reset" style="margin-right: 8px;"> 
+              <strong>🗑️ Reset All (Clear Current Event)</strong>
+            </label>
+          </div>
+          <div style="margin-top: 16px; text-align: right;">
+            <button type="button" onclick="document.getElementById('eventDialog').style.display='none'" 
+                    style="margin-right: 8px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Cancel
+            </button>
+            <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Select
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    // Create and show dialog
+    const dialog = document.createElement('div');
+    dialog.id = 'eventDialog';
+    dialog.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+      background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; 
+      z-index: 2000; padding: 20px; box-sizing: border-box;
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+      background: white; padding: 24px; border-radius: 8px; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;
+    `;
+    content.innerHTML = dialogHTML;
+    
+    dialog.appendChild(content);
+    document.body.appendChild(dialog);
+
+    // Handle form submission
+    document.getElementById('eventForm').onsubmit = (e) => {
+      e.preventDefault();
+      const selected = document.querySelector('input[name="eventChoice"]:checked');
+      if (selected) {
+        if (selected.value === 'reset') {
+          // Reset all - clear current event
+          setCurrentSharedEventId(null);
+          setSchedule([]);
+          setSummary([]);
+          setCurrentIdx(null);
+          pushHistory([]);
+        } else {
+          const index = parseInt(selected.value);
+          loadSharedEvent(sharedEvents[index].id);
+        }
+      }
+      document.body.removeChild(dialog);
+    };
+
+    // Close on background click
+    dialog.onclick = (e) => {
+      if (e.target === dialog) {
+        document.body.removeChild(dialog);
+      }
+    };
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
@@ -1322,87 +1409,15 @@ const ShowFlowAgent = () => {
               textAlign: 'center',
               marginBottom: '32px'
             }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '16px'
+              <h1 style={{
+                fontSize: '1.5em',
+                margin: 0,
+                fontWeight: '600',
+                textShadow: '0 1px 2px rgba(0,0,0,0.2)'
               }}>
-                <img 
-                  src="/styles/showflow-logo-new.png" 
-                  alt="ShowFlow" 
-                  style={{height: '32px', marginRight: '12px'}}
-                />
-                <h1 style={{
-                  fontSize: '1.5em',
-                  margin: 0,
-                  fontWeight: '600',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.2)'
-                }}>
-                  Event Tracker
-                </h1>
-              </div>
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'center',
-                marginTop: '16px'
-              }}>
-                <button 
-                  className="showflow-btn"
-                  style={{
-                    background: 'rgba(255,255,255,0.9)',
-                    border: '2px solid rgba(255,255,255,0.5)',
-                    color: '#6c7bbd',
-                    padding: '8px 16px',
-                    fontSize: '0.9em',
-                    fontWeight: '600',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                  }}
-                  onClick={() => {
-                    // Show mobile menu
-                    const menuActions = ['Edit Mode', 'Full Screen', 'Load Different Event'];
-                    const choice = prompt(`Menu:\n${menuActions.map((action, i) => `${i+1}. ${action}`).join('\n')}\n\nEnter number:`);
-                    
-                    if (choice === '1') {
-                      setShowMobileEdit(true);
-                    } else if (choice === '2') {
-                      setPresenterViewMode(true);
-                    } else if (choice === '3') {
-                      if (sharedEvents.length > 0) {
-                        const eventNames = sharedEvents.map(e => e.name);
-                        const eventChoice = prompt(`Load Event:\n${eventNames.map((name, i) => `${i+1}. ${name}`).join('\n')}\n\nEnter number:`);
-                        const index = parseInt(eventChoice) - 1;
-                        if (index >= 0 && index < sharedEvents.length) {
-                          loadSharedEvent(sharedEvents[index].id);
-                        }
-                      } else {
-                        alert('No saved events available. Create one in Edit Mode first.');
-                      }
-                    }
-                  }}
-                >
-                  ☰ Menu
-                </button>
-                {currentSharedEventId && (
-                  <button 
-                    className="showflow-btn"
-                    style={{
-                      background: 'rgba(34, 197, 94, 0.9)',
-                      border: '2px solid rgba(34, 197, 94, 0.5)',
-                      color: 'white',
-                      padding: '8px 16px',
-                      fontSize: '0.9em',
-                      fontWeight: '600',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
-                    onClick={() => updateSharedEvent()}
-                    disabled={isLoading}
-                  >
-                    💾 Save
-                  </button>
-                )}
-              </div>
+                Event Tracker
+              </h1>
+              {/* Only keep the smart Load/Change Event button */}
             </div>
 
             {schedule.length === 0 ? (
@@ -1434,18 +1449,7 @@ const ShowFlowAgent = () => {
                       borderRadius: '8px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                     }}
-                    onClick={() => {
-                      if (sharedEvents.length > 0) {
-                        const eventNames = sharedEvents.map(e => e.name);
-                        const eventChoice = prompt(`Load Event:\n${eventNames.map((name, i) => `${i+1}. ${name}`).join('\n')}\n\nEnter number:`);
-                        const index = parseInt(eventChoice) - 1;
-                        if (index >= 0 && index < sharedEvents.length) {
-                          loadSharedEvent(sharedEvents[index].id);
-                        }
-                      } else {
-                        alert('No saved events available. Use Menu → Edit Mode to create one.');
-                      }
-                    }}
+                    onClick={() => showEventSelector()}
                   >
                     📂 Load an Event
                   </button>
@@ -1578,6 +1582,33 @@ const ShowFlowAgent = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Smart Load/Change Event Button */}
+                <div style={{
+                  margin: '24px 0',
+                  textAlign: 'center'
+                }}>
+                  <button 
+                    className="showflow-btn"
+                    style={{
+                      background: 'rgba(255,255,255,0.9)',
+                      border: '2px solid rgba(255,255,255,0.5)',
+                      color: '#6c7bbd',
+                      padding: '12px 24px',
+                      fontSize: '1em',
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      minWidth: '160px'
+                    }}
+                    onClick={() => {
+                      // Show event selector with radio buttons
+                      showEventSelector();
+                    }}
+                  >
+                    {currentSharedEventId ? '🔄 Change Event' : '📂 Load Event'}
+                  </button>
+                </div>
 
                 {/* Quick Actions */}
                 <div style={{

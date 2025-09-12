@@ -1176,21 +1176,26 @@ const ShowFlowAgent = () => {
   return (
     <MobileErrorBoundary>
       <div className={['showflow-root', theme, highContrast ? 'high-contrast' : ''].join(' ')}>
-        {/* Mobile Nav - Logo header matching desktop style */}
+        {/* Mobile Logo Header - Custom mobile-only styling */}
         {isMobileDevice && (
-          <header className="logo-only-header" style={{position:'relative',zIndex:1100}}>
-            <div className="logo-header-content" style={{ padding: '24px 0 12px 0' }}>
-              <img
-                src={theme === 'dark' ? 'styles/showflowlogov3_dark.png' : 'styles/showflow-logo-new.png'}
-                alt="Show Flow Agent Logo"
-                className="prominent-logo"
-                style={{ 
-                  width: '150px',
-                  maxWidth: '80vw'
-                }}
-              />
-            </div>
-          </header>
+          <div className="mobile-logo-header" style={{
+            background: 'none',
+            padding: '24px 0 12px 0',
+            textAlign: 'center',
+            position: 'relative',
+            zIndex: 1100
+          }}>
+            <img
+              src={theme === 'dark' ? 'styles/showflowlogov3_dark.png' : 'styles/showflow-logo-new.png'}
+              alt="Show Flow Agent Logo"
+              style={{ 
+                width: '150px',
+                maxWidth: '80vw',
+                filter: 'drop-shadow(0 4px 18px rgba(0,0,0,0.28))',
+                background: 'none'
+              }}
+            />
+          </div>
         )}
         {/* Mobile nav drawer (simple) */}
         {isMobileDevice && mobileNavOpen && (
